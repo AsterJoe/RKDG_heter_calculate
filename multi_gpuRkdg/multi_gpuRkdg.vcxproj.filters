@@ -1,0 +1,139 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="inc">
+      <UniqueIdentifier>{76381258-951c-48ad-9e28-e9d044ce5521}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="input">
+      <UniqueIdentifier>{fa1b2d33-3a4e-4a53-b0ea-1010fb7a245f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{71cda3d5-af20-407d-9881-bb85e0ee1149}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test">
+      <UniqueIdentifier>{898aceb9-92aa-4680-ada2-27e445482c01}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="inc\config.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\cppstdheaders.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\cudaarrays.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\cudarkdgsolver.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\defines.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\edge.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\gauss.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\kernelfunctions.cuh">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\myexception.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\mytime.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\triangleinfo.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\unstructuredgrid.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\vertice2d.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="input\EdgeVertice.dat">
+      <Filter>input</Filter>
+    </None>
+    <None Include="input\ElemDepart.dat">
+      <Filter>input</Filter>
+    </None>
+    <None Include="input\ElemEdge.dat">
+      <Filter>input</Filter>
+    </None>
+    <None Include="input\ElemNeigh.dat">
+      <Filter>input</Filter>
+    </None>
+    <None Include="input\ElemVertice.dat">
+      <Filter>input</Filter>
+    </None>
+    <None Include="input\main.conf">
+      <Filter>input</Filter>
+    </None>
+    <None Include="input\mesh.conf">
+      <Filter>input</Filter>
+    </None>
+    <None Include="input\Vertice.dat">
+      <Filter>input</Filter>
+    </None>
+    <None Include="..\..\..\..\..\zxy\rkdg-cuda\naca0012\Makefile">
+      <Filter>inc</Filter>
+    </None>
+    <None Include="input\depart10.dat">
+      <Filter>input</Filter>
+    </None>
+    <None Include="input\depart4.dat">
+      <Filter>input</Filter>
+    </None>
+    <None Include="input\depart3.dat">
+      <Filter>input</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\config.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cudaarrays.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\edge.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gauss.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\myexception.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\mytime.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\triangleinfo.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\unstructuredgrid.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\vertice2d.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="testLocalElemIndex.cpp">
+      <Filter>test</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="src\cudarkdgsolver.cu">
+      <Filter>src</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernelfunctions.cu">
+      <Filter>src</Filter>
+    </CudaCompile>
+  </ItemGroup>
+</Project>
