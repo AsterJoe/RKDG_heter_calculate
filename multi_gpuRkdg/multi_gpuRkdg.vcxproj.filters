@@ -54,6 +54,9 @@
     <ClInclude Include="inc\vertice2d.h">
       <Filter>inc</Filter>
     </ClInclude>
+    <ClInclude Include="inc\rkdgadvance.h">
+      <Filter>inc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="input\EdgeVertice.dat">
@@ -92,6 +95,12 @@
     <None Include="input\depart3.dat">
       <Filter>input</Filter>
     </None>
+    <None Include="..\..\mesh_script\mesh_script\node10000\Vertice.txt">
+      <Filter>input</Filter>
+    </None>
+    <None Include="..\..\Makefile">
+      <Filter>input</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\config.cpp">
@@ -126,6 +135,9 @@
     </ClCompile>
     <ClCompile Include="testLocalElemIndex.cpp">
       <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rkdgadvance.cpp">
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

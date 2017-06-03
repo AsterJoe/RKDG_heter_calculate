@@ -12,10 +12,11 @@
  * @attention 你可以无限制的使用本文件（开源的或商业的目的），唯一的要求是保留作者信息、版权说明以及该使用注意。
  */
 
+#include<mpi.h>
 #include "../inc/cppstdheaders.h"
 #include "../inc/cudarkdgsolver.h"
 #include"../inc/unstructuredgrid.h"
-#include<mpi.h>
+#include "../inc/rkdgadvance.h"
 using namespace std;
 
 
@@ -29,40 +30,67 @@ int main(int argc, char* argv[])
 	MPI_Init(&argc, &argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 	MPI_Comm_rank(MPI_COMM_WORLD, &myid);
-//
-//	CUnstructuredGrid grid;
-//	grid.config_file = "input/mesh.conf";
-////	grid.initializeGrid(0);
-////
-////	ofstream of("output/local.dat");
-////	for (int i = 0; i < grid.elem_index.size() - 1; i++) {
-//////		cout<<grid.vertice.at(grid.elem_index[i]).getX()<<"  "<<grid.vertice.at(grid.elem_index[i]).getX()<<endl;
-//////		of<<grid.vertice.at(grid.elem_index[i]).getX()<<"  "<<grid.vertice.at(grid.elem_index[i]).getY()<<endl;
-////		of<<grid.vertice.at(grid.tri_vertice[grid.elem_index[i] * 3]).getX()<<"  "<<grid.vertice.at(grid.tri_vertice[grid.elem_index[i] * 3]).getY()<<endl;
-////		of<<grid.vertice.at(grid.tri_vertice[grid.elem_index[i] * 3 + 1]).getX()<<"  "<<grid.vertice.at(grid.tri_vertice[grid.elem_index[i] * 3 + 1]).getY()<<endl;
-////		of<<grid.vertice.at(grid.tri_vertice[grid.elem_index[i] * 3 + 2]).getX()<<"  "<<grid.vertice.at(grid.tri_vertice[grid.elem_index[i] * 3 + 2]).getY()<<endl;
-////	}
-////	of.close();
-//
-//	try {
-//		solver.config_file = "input/main.conf";
-//
-//		solver.run(myid, nprocs);
-//	}
-//	catch ( const exception& e )
-//	{
-//		cout<<endl<<"Error occured, description: "<<endl;
-//		cout<<e.what()<<endl;
-//		cout<<endl<<"Please modify the program according to the hint."<<endl;
-//		getchar();
-//
-//		exit(-1);
-//	}
-//	
-//	
-//	
-//	cout<<"complete solving flow, press ENTER to exit."<<endl;
-//	MPI_Finalize();
+
+//	CCUDARkdgSolver solver;
+	CUnstructuredGrid grid;
+	grid.config_file = "input/mesh.conf";
+	grid.initializeGrid(myid,2);
+
+	ofstream of("output/local.dat");
+	for (int i = 0; i < grid.elem_index.size() - 1; i++) {
+//		cout<<grid.vertice.at(grid.elem_index[i]).getX()<<"  "<<grid.vertice.at(grid.elem_index[i]).getX()<<endl;
+//		of<<grid.vertice.at(grid.elem_index[i]).getX()<<"  "<<grid.vertice.at(grid.elem_index[i]).getY()<<endl;
+		of<<grid.vertice.at(grid.tri_vertice[grid.elem_index[i] * 3]).getX()<<"  "<<grid.vertice.at(grid.tri_vertice[grid.elem_index[i] * 3]).getY()<<endl;
+		of<<grid.vertice.at(grid.tri_vertice[grid.elem_index[i] * 3 + 1]).getX()<<"  "<<grid.vertice.at(grid.tri_vertice[grid.elem_index[i] * 3 + 1]).getY()<<endl;
+		of<<grid.vertice.at(grid.tri_vertice[grid.elem_index[i] * 3 + 2]).getX()<<"  "<<grid.vertice.at(grid.tri_vertice[grid.elem_index[i] * 3 + 2]).getY()<<endl;
+	}
+	of.close();
+
+
+
+	/*try {
+		solver.config_file = "input/main.conf";
+
+		solver.run(myid, nprocs);
+
+		RkdgAdvance advance(&solver);
+		advance.advance();
+		solver.runAfter();
+	}
+	catch ( const exception& e )
+	{
+		cout<<endl<<"Error occured, description: "<<endl;
+		cout<<e.what()<<endl;
+		cout<<endl<<"Please modify the program according to the hint."<<endl;
+		getchar();
+
+		exit(-1);
+	}
+	
+	
+	double *result_rho, *result_rhou, *result_rhov, *result_rhoE;
+	result_rho = new double(solver.grid.getTriangleNumber());
+	result_rhou = new double(solver.grid.getTriangleNumber());
+	result_rhov = new double(solver.grid.getTriangleNumber());
+	result_rhoE = new double(solver.grid.getTriangleNumber());
+	MPI_Gather(solver._freedom_rho, solver.grid.getLocalTriangleNumber(), MPI_DOUBLE,
+		result_rho, solver.grid.getLocalTriangleNumber(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Gather(solver._freedom_rhou, solver.grid.getLocalTriangleNumber(), MPI_DOUBLE,
+		result_rhou, solver.grid.getLocalTriangleNumber(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Gather(solver._freedom_rhov, solver.grid.getLocalTriangleNumber(), MPI_DOUBLE,
+		result_rhov, solver.grid.getLocalTriangleNumber(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Gather(solver._freedom_rhoE, solver.grid.getLocalTriangleNumber(), MPI_DOUBLE,
+		result_rhoE, solver.grid.getLocalTriangleNumber(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	
+	if (myid == 0) {
+		solver.outputSolution(result_rho, result_rhou, result_rhov, result_rhoE);
+	}
+	cout<<"complete solving flow, press ENTER to exit."<<endl;
+	MPI_Finalize();
+	*/
+	
+	
+	
 	//CUnstructuredGrid grid0, grid1, grid2;
 	//grid0.config_file = "input/mesh.conf";
 	//grid0.initializeGrid(0, 2);
@@ -88,9 +116,11 @@ int main(int argc, char* argv[])
 	//	of1<<grid1.vertice.at(grid1.tri_vertice[grid1.elem_index[i] * 3 + 2]).getX()<<"  "<<grid1.vertice.at(grid1.tri_vertice[grid1.elem_index[i] * 3 + 2]).getY()<<endl;
 	//}
 
-	CUnstructuredGrid grid;
-	grid.config_file = "input/mesh.conf";
-	grid.initializeGrid(myid,2);
+
+
+	//CUnstructuredGrid grid;
+	//grid.config_file = "input/mesh.conf";
+	//grid.initializeGrid(myid,2);
 
 	MPI_Finalize();
 	return 0;

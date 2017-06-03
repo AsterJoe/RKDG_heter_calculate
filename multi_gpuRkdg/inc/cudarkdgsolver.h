@@ -19,7 +19,6 @@
 #include "defines.h"
 #include "myexception.h"
 #include "mytime.h"
-#include "mpi.h"
 using namespace std;
 
 /**
@@ -63,8 +62,8 @@ class CCUDARkdgSolver {
 		
 		int threads_per_block;		/**< 每个CUDA块中线程的数目 */
 		int reduction_threads;		/**< 在聚合函数里（通常只有一个线程块）的线程数目 */
-
-	protected:
+		CCUDAArrays _cuarrays;		/**< GPU上求解使用的数组 */
+//	protected:
 		double _terminal_time;		/**< 求解总时间 */
 
 		double *_freedom_rho;		/**< rho自由度 */
@@ -74,8 +73,8 @@ class CCUDARkdgSolver {
 
 		double *_dt;				/**< 时间步长 */
 		double *_residual;			/**< 残差 */
-
-		CCUDAArrays _cuarrays;		/**< GPU上求解使用的数组 */
+		//CCUDAArrays _cuarrays;		/**< GPU上求解使用的数组 */
+		
 		
 	private:
 
@@ -100,8 +99,9 @@ class CCUDARkdgSolver {
 		void initRKDG(void);
 
 		/** rkdg时间推进 */
-		void rkdgAdvance(void);
+		//void rkdgAdvance(void);
 
+		void runAfter();
 		/**
 		 * 求解时间步长
 		 * @param[in] tnum integer 三角单元数目
@@ -208,7 +208,7 @@ class CCUDARkdgSolver {
 		void copyFreedomToHost(void);
 
 		/** 输出解 */
-		void outputSolution(void);
+		void outputSolution(double* result_rho,double* result_rhou, double* result_rhov, double* result_rhoE);
 
 		/**
 		 * 输出程序配置信息

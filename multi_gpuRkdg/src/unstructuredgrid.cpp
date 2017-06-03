@@ -27,7 +27,6 @@ void CUnstructuredGrid::initializeGrid(int myid, int nprocs)
 		"edgevertice_filename",
 		"output_filename"
 	};
-	
 	CConfig grid_conf(config_file, conf_items, 9);
 	if ( !grid_conf.parseConfigFile() )
 		grid_conf.printQuitMessage();
@@ -35,11 +34,9 @@ void CUnstructuredGrid::initializeGrid(int myid, int nprocs)
 	_triangle_num = atoi(grid_conf.config_items["trianglenum"].c_str());
 	_vertice_num  = atoi(grid_conf.config_items["verticenum"].c_str());
 	_edge_num = atoi(grid_conf.config_items["edgenum"].c_str());
-	output_filename = grid_conf.config_items["output_filename"];
-		
+	output_filename = grid_conf.config_items["output_filename"];	
 	readMeshPartitionInfo("input/ElemDepart.dat", myid);
 	parseGhostNum(grid_conf.config_items["trineigh_filename"]);	
-
 	_cell_num = _triangle_num + _ghost_triangle_num;
 
 	// 分配空间
@@ -50,20 +47,17 @@ void CUnstructuredGrid::initializeGrid(int myid, int nprocs)
 	tri_neighbour  = new int[3*_cell_num];
 	tri_sharedEdge = new int[3*_cell_num];
 	tri_flag       = new int[_cell_num];
-	cout<<"b"<<endl;
+
 	local_innerBoundary_index = new vector<int>[nprocs - 1];
 	neigh_innerBoundary_index = new vector<int>[nprocs - 1];
-	innerBoundary_edge = new vector<int>[nprocs - 1];
-
-	cout<<"c"<<endl;
 	readTriangleVertice(grid_conf.config_items["trivertice_filename"]);
 	readTriangleNeighbour(grid_conf.config_items["trineigh_filename"]);
 	readTriangleEdge(grid_conf.config_items["triedge_filename"]);
 	readVertice(grid_conf.config_items["vertice_filename"]);
 	readEdgeVertice(grid_conf.config_items["edgevertice_filename"]);
-	cout<<"d"<<endl;
+	cout<<"11"<<endl;
 	markInnerBoundary();
-
+	cout<<"12"<<endl;
 	for (int i = 0; i < nprocs - area_index - 1; ++i) {
 		int* local_exchange_elem = new int[local_innerBoundary_index[i].size()];
 		int* neigh_exchange_elem = new int[local_innerBoundary_index[i].size()];
@@ -75,13 +69,11 @@ void CUnstructuredGrid::initializeGrid(int myid, int nprocs)
 		MPI_Isend(local_exchange_elem, local_innerBoundary_index[i].size(), MPI_INT, i + 1, 0, MPI_COMM_WORLD, &request);
 		MPI_Isend(neigh_exchange_elem, local_innerBoundary_index[i].size(), MPI_INT, i + 1, 1, MPI_COMM_WORLD, &request);
 	}
-	cout<<"test"<<endl;
 	int data_size;
 	for (int j = 0; j < area_index; ++j) {
 		
 		MPI_Probe(j,1,MPI_COMM_WORLD, &status);
 		MPI_Get_count(&status, MPI_INT, &data_size);
-		cout<<"data_size:"<<data_size<<endl;
 		int* local_exchange_elem = new int[data_size];
 		int* neigh_exchange_elem = new int[data_size];
 		MPI_Irecv(local_exchange_elem, data_size,MPI_INT, j, 1, MPI_COMM_WORLD, &request);
@@ -92,26 +84,44 @@ void CUnstructuredGrid::initializeGrid(int myid, int nprocs)
 			neigh_innerBoundary_index[j].push_back(neigh_exchange_elem[i]);
 		}
 	}
-		
+	cout<<"13"<<endl;
 	_local_triangle_num = elem_index.size();
 	_local_vertice_num = getLocalMeshInfo(MESH_VERTICE_NUM);
 	_local_edge_num = getLocalMeshInfo(MESH_EDGE_NUM);
-	parseGhostNum(grid_conf.config_items["trineigh_filename"]);
+	//parseGhostNum;
 	_local_cell_num = _local_triangle_num + _local_ghost_triangle_num;
-	
+	for (int i = 0; i < nprocs - 1; i++) {
+		_local_cell_num += local_innerBoundary_index[i].size();
+	}
 	local_tri_neighbour = new int[3 * _local_cell_num];
 	local_tri_sharedEdge = new int[3 * _local_cell_num];
 	local_tri_flag = new int[_local_cell_num];
-	
-	cout<<"e"<<endl;
+	cout<<"14"<<endl;
+	initLocalTriNeigh();
 
-	initGhostGrid();
-//	initLocalGhostGrid();
-	cout<<"ea"<<endl;
-	initSharedEdge();
-//	initLocalSharedEdge();
-	cout<<"eb"<<endl;
+//	initGhostGrid();
+	cout<<"a"<<endl;
+	initLocalGhostGrid();
+	cout<<"b"<<endl;
+//	initSharedEdge();
+	initLocalSharedEdge();
+	cout<<"c"<<endl;
 
+}
+
+void CUnstructuredGrid::initLocalTriNeigh() {
+	vector<int>::iterator iter;
+	for ( int i = 0; i < _local_triangle_num; ++i) {
+		for ( int j = 0; j < TRIANGLE_EDGES; ++j) {
+//			local_tri_neighbour[i + j *_cell_num] = tri_neighbour[elem_index[i]+j*_cell_num];
+			iter = find(elem_index.begin(), elem_index.end(), tri_neighbour[elem_index[i]+j*_cell_num]);
+			if (iter != elem_index.end()) {
+				local_tri_neighbour[i + j * _local_cell_num] = distance(elem_index.begin(), iter);
+			} else {
+				local_tri_neighbour[i + j * _local_cell_num] = -2;
+			}
+		}
+	}
 }
 
 int CUnstructuredGrid::getLocalMeshInfo(int info_type) {
@@ -225,6 +235,10 @@ void CUnstructuredGrid::parseGhostNum(const string& trineigh_filename)
 	fin.close();
 }
 
+void CUnstructuredGrid::parseLocalGhostNum() {
+
+}
+
 void CUnstructuredGrid::readTriangleVertice(const string& trivertice_filename)
 {
 	ifstream fin(trivertice_filename.c_str());
@@ -264,18 +278,18 @@ void CUnstructuredGrid::readTriangleNeighbour(const string& trineigh_filename)
 		for ( int j=0; j<TRIANGLE_EDGES; ++j )
 			fin>>tri_neighbour[i+j*_cell_num];
 	}
-	vector<int>::iterator iter;
-	for ( int i = 0; i < _local_triangle_num; ++i) {
-		for ( int j = 0; j < TRIANGLE_EDGES; ++j) {
-//			local_tri_neighbour[i + j *_cell_num] = tri_neighbour[elem_index[i]+j*_cell_num];
-			iter = find(elem_index.begin(), elem_index.end(), tri_neighbour[elem_index[i]+j*_cell_num]);
-			if (iter != elem_index.end()) {
-				local_tri_neighbour[i + j * _cell_num] = distance(elem_index.begin(), iter);
-			} else {
-				local_tri_neighbour[i + j * _cell_num] = -2;
-			}
-		}
-	}
+//	vector<int>::iterator iter;
+//	for ( int i = 0; i < _local_triangle_num; ++i) {
+//		for ( int j = 0; j < TRIANGLE_EDGES; ++j) {
+////			local_tri_neighbour[i + j *_cell_num] = tri_neighbour[elem_index[i]+j*_cell_num];
+//			iter = find(elem_index.begin(), elem_index.end(), tri_neighbour[elem_index[i]+j*_cell_num]);
+//			if (iter != elem_index.end()) {
+//				local_tri_neighbour[i + j * _local_cell_num] = distance(elem_index.begin(), iter);
+//			} else {
+//				local_tri_neighbour[i + j * _local_cell_num] = -2;
+//			}
+//		}
+//	}
 
 	fin.close();
 }
@@ -359,6 +373,20 @@ void CUnstructuredGrid::readMeshPartitionInfo(const string& partition_file, int 
 
 void CUnstructuredGrid::markInnerBoundary() {
 	ofstream ofs("output/boundary.dat");
+	//ofstream ofs2("output/boundary2.dat");
+	//for (int i = 0; i < elem_index.size(); i++) {
+	//	for (int j = 0; j < TRIANGLE_EDGES; j++) {
+	//		if (tri_neighbour[elem_index[i] + j * _cell_num] != -1) {
+	//			int loc = elem_location[tri_neighbour[elem_index[i] + j * _cell_num]];
+	//			
+	//			if (area_index < loc) {
+	//				local_innerBoundary_index[loc - 1].push_back(i);
+	//				neigh_innerBoundary_index[loc - 1].push_back(j);
+	//			}
+	//		}
+	//	}
+	//}
+
 	for (int i = 0; i < elem_index.size(); i++) {
 		for (int j = 0; j < _triangle_num; j++) {
 			if (area_index < elem_location[j]) {
@@ -381,48 +409,68 @@ void CUnstructuredGrid::markInnerBoundary() {
 }
 
 bool CUnstructuredGrid::hasCommonEdge(int i, int j) {
-	//int tvn = _local_vertice_num;
+	int tvn = _local_vertice_num;
+	int ten = _local_triangle_num;
 	bool result = false;
 	for (int p = 0; p < TRIANGLE_EDGES; p++) {
 		for (int q = 0; q < TRIANGLE_EDGES; q++) {
 			if (tri_edge[i * TRIANGLE_EDGES + p] == tri_edge[j * TRIANGLE_EDGES + q]) {
-				innerBoundary_edge[elem_location[j] - 1].push_back(tri_edge[i  * TRIANGLE_EDGES + p]);
-				/*CEdge boundary_edge0 = edge.at(tri_edge[i * TRIANGLE_EDGES]);
-				CEdge boundary_edge1 = edge.at(tri_edge[i * TRIANGLE_EDGES + 1]);
-				CEdge boundary_edge2 = edge.at(tri_edge[i * TRIANGLE_EDGES + 2]);*/
+				//innerBoundary_edge[elem_location[j] - 1].push_back(tri_edge[i  * TRIANGLE_EDGES + p]);
 				
-				/*switch (q) {
-				case 0:
-					if (boundary_edge1.getStart() == boundary_edge2.getTerminal()) {
-						vertice[tvn].setVertice(vertice[boundary_edge1.getStart()].getX(), 
-							vertice[boundary_edge1.getStart()].getY());
-					} else {
-						vertice[tvn].setVertice(vertice[boundary_edge1.getTerminal()].getX(), 
-							vertice[boundary_edge1.getTerminal()].getY());
-					}
-					++ tvn;
-					break;
-				case 1:
-					if (boundary_edge0.getStart() == boundary_edge2.getTerminal()) {
-						vertice[tvn].setVertice(vertice[boundary_edge0.getStart()].getX(), 
-							vertice[boundary_edge0.getStart()].getY());
-					} else {
-						vertice[tvn].setVertice(vertice[boundary_edge0.getTerminal()].getX(), 
-							vertice[boundary_edge0.getTerminal()].getY());
-					}
-					++ tvn;
-					break;
-				case 2:
-					if (boundary_edge0.getStart() == boundary_edge1.getTerminal()) {
-						vertice[tvn].setVertice(vertice[boundary_edge0.getStart()].getX(), 
-							vertice[boundary_edge0.getStart()].getY());
-					} else {
-						vertice[tvn].setVertice(vertice[boundary_edge0.getTerminal()].getX(), 
-							vertice[boundary_edge0.getTerminal()].getY());
-					}
-					++ tvn;
-					break;
-				}*/
+				//CEdge boundary_edge0 = edge.at(tri_edge[first * TRIANGLE_EDGES]);
+				//CEdge boundary_edge1 = edge.at(tri_edge[first * TRIANGLE_EDGES + 1]);
+				//CEdge boundary_edge2 = edge.at(tri_edge[first * TRIANGLE_EDGES + 2]);
+				//
+				//switch (q) {
+				//case 0:
+				//	if (boundary_edge1.getStart() == boundary_edge2.getTerminal()) {
+				//		//vertice[tvn].setVertice(vertice[boundary_edge1.getStart()].getX(), 
+				//		//	vertice[boundary_edge1.getStart()].getY());
+
+				//		// 添加虚拟单元的邻居关系
+				//		local_tri_neighbour[ten] = i;
+				//		local_tri_neighbour[ten+_cell_num] = -1;
+				//		local_tri_neighbour[ten+2*_cell_num] = -1;
+				//		local_tri_sharedEdge[ten] = 0;
+
+				//		// 更新所在单元邻居列表
+				//		local_tri_neighbour[i] = ten;
+				//	} else {
+				//		/*vertice[tvn].setVertice(vertice[boundary_edge1.getTerminal()].getX(), 
+				//			vertice[boundary_edge1.getTerminal()].getY());*/
+				//		// 添加虚拟单元的邻居关系
+				//		local_tri_neighbour[ten] = i;
+				//		local_tri_neighbour[ten+_cell_num] = -1;
+				//		local_tri_neighbour[ten+2*_cell_num] = -1;
+				//		local_tri_sharedEdge[ten] = 0;
+
+				//		// 更新所在单元邻居列表
+				//		local_tri_neighbour[i] = ten;
+				//	}
+				//	++ tvn;
+				//	++ ten;
+				//	break;
+				//case 1:
+				//	if (boundary_edge0.getStart() == boundary_edge2.getTerminal()) {
+				//		/*vertice[tvn].setVertice(vertice[boundary_edge0.getStart()].getX(), 
+				//			vertice[boundary_edge0.getStart()].getY());*/
+				//	} else {
+				//		/*vertice[tvn].setVertice(vertice[boundary_edge0.getTerminal()].getX(), 
+				//			vertice[boundary_edge0.getTerminal()].getY());*/
+				//	}
+				//	++ tvn;
+				//	break;
+				//case 2:
+				//	if (boundary_edge0.getStart() == boundary_edge1.getTerminal()) {
+				//		/*vertice[tvn].setVertice(vertice[boundary_edge0.getStart()].getX(), 
+				//			vertice[boundary_edge0.getStart()].getY());*/
+				//	} else {
+				//		/*vertice[tvn].setVertice(vertice[boundary_edge0.getTerminal()].getX(), 
+				//			vertice[boundary_edge0.getTerminal()].getY());*/
+				//	}
+				//	++ tvn;
+				//	break;
+				//}
 				result = true;
 			}
 		}
@@ -605,10 +653,25 @@ void CUnstructuredGrid::initLocalGhostGrid(void) {
 	int i, j, k, e;
 	double x1, x2, x3, y1, y2, y3, xt, yt;
 	
-	//int ten = _triangle_num;
-	//int tvn = _vertice_num;
 	int ten = _local_triangle_num;
+	int ten_global = _triangle_num;
 	int tvn = _local_vertice_num;
+
+	for (int i = 0; i < nprocs - 1; i++) {
+		for ( int j = 0; j < local_innerBoundary_index[i].size(); j++) {
+			local_tri_neighbour[ten] = local_innerBoundary_index[i].at(j);
+			local_tri_neighbour[ten + _local_cell_num] = -1;
+			local_tri_neighbour[ten + 2 * _local_cell_num] = -1;
+			for (int t = 0; t < TRIANGLE_EDGES; t++) {
+				if (local_tri_neighbour[local_innerBoundary_index[i].at(j) + t * _local_cell_num] == -2) {
+					local_tri_sharedEdge[ten] = t;
+				}
+			}	
+			local_tri_neighbour[local_innerBoundary_index[i].at(j)] = ten;
+
+			++ ten;
+		}
+	}
 	for ( e=0; e<_local_triangle_num; ++e )
 	{
 		if (tri_neighbour[elem_index[e]]==-1 )
@@ -631,9 +694,9 @@ void CUnstructuredGrid::initLocalGhostGrid(void) {
 			vertice[tvn].setVertice(xt,yt);
 
 			// 更新单元列表
-			tri_vertice[ten*TRIANGLE_VERTICES] = tvn;
-			tri_vertice[ten*TRIANGLE_VERTICES+1] = k;
-			tri_vertice[ten*TRIANGLE_VERTICES+2] = j;
+			tri_vertice[ten_global*TRIANGLE_VERTICES] = tvn;
+			tri_vertice[ten_global*TRIANGLE_VERTICES+1] = k;
+			tri_vertice[ten_global*TRIANGLE_VERTICES+2] = j;
 			
 			// 添加虚拟单元的邻居关系
 			/*tri_neighbour[ten] = elem_index[e];
@@ -651,6 +714,7 @@ void CUnstructuredGrid::initLocalGhostGrid(void) {
 
 			++ tvn;
 			++ ten;
+			++ ten_global;
 		}
 		else if ( tri_neighbour[elem_index[e] + _cell_num]==-1 )
 		{
@@ -672,21 +736,27 @@ void CUnstructuredGrid::initLocalGhostGrid(void) {
 			vertice[tvn].setVertice(xt,yt);
 
 			// 更新单元列表
-			tri_vertice[ten*TRIANGLE_VERTICES] = tvn;
-			tri_vertice[ten*TRIANGLE_VERTICES+1] = i;
-			tri_vertice[ten*TRIANGLE_VERTICES+2] = k;
+			tri_vertice[ten_global*TRIANGLE_VERTICES] = tvn;
+			tri_vertice[ten_global*TRIANGLE_VERTICES+1] = i;
+			tri_vertice[ten_global*TRIANGLE_VERTICES+2] = k;
 			
 			// 添加虚拟单元的邻居关系
-			tri_neighbour[ten] = elem_index[e];
+			/*tri_neighbour[ten] = elem_index[e];
 			tri_neighbour[ten+_cell_num] = -1;
 			tri_neighbour[ten+2*_cell_num] = -1;
-			tri_sharedEdge[ten] = 1;
+			tri_sharedEdge[ten] = 1;*/
+
+			local_tri_neighbour[ten] = elem_index[e];
+			local_tri_neighbour[ten + _local_cell_num] = -1;
+			local_tri_neighbour[ten + 2 * _local_cell_num] = -1;
+			local_tri_sharedEdge[ten] = 1;
 
 			// 更新所在单元邻居列表
 			tri_neighbour[e+_local_cell_num] = ten;
 
 			++ tvn;
 			++ ten;
+			++ ten_global;
 		}
 		else if ( tri_neighbour[elem_index[e] + 2 * _cell_num]==-1 )
 		{
@@ -708,21 +778,27 @@ void CUnstructuredGrid::initLocalGhostGrid(void) {
 			vertice[tvn].setVertice(xt,yt);
 
 			// 更新单元列表
-			tri_vertice[ten*TRIANGLE_VERTICES] = tvn;
-			tri_vertice[ten*TRIANGLE_VERTICES+1] = i;
-			tri_vertice[ten*TRIANGLE_VERTICES+2] = j;
+			tri_vertice[ten_global*TRIANGLE_VERTICES] = tvn;
+			tri_vertice[ten_global*TRIANGLE_VERTICES+1] = i;
+			tri_vertice[ten_global*TRIANGLE_VERTICES+2] = j;
 
 			// 添加虚拟单元的邻居关系
-			tri_neighbour[ten] = elem_index[e];
+			/*tri_neighbour[ten] = elem_index[e];
 			tri_neighbour[ten+_cell_num] = -1;
 			tri_neighbour[ten+2*_cell_num] = -1;
-			tri_sharedEdge[ten] = 2;
+			tri_sharedEdge[ten] = 2;*/
+
+			local_tri_neighbour[ten] = elem_index[e];
+			local_tri_neighbour[ten + _local_cell_num] = -1;
+			local_tri_neighbour[ten + 2 * _local_cell_num] = -1;
+			local_tri_sharedEdge[ten] = 2;
 			
 			// 更新所在单元邻居列表
 			tri_neighbour[e+2*_local_cell_num] = ten;
 
 			++ tvn;
 			++ ten;
+			++ ten_global;
 		} 
 		
 	}
@@ -992,35 +1068,31 @@ void CUnstructuredGrid::initSharedEdge()
 
 void CUnstructuredGrid::initLocalSharedEdge() {
 	int neigh_index, edge_index;
-	cout<<"elem_index[1]:"<<elem_index[1]<<endl;
 	for ( int e=0; e<_local_triangle_num; ++e )
 	{
 		for ( int k=0; k<TRIANGLE_EDGES; ++k )
 		{
-			neigh_index = tri_neighbour[elem_index[e]+k*_cell_num];
-			//neigh_index = local_tri_neighbour[e] + k * _local_cell_num;
-			cout<<"qwe"<<endl;
+			//neigh_index = tri_neighbour[elem_index[e]+k*_cell_num];
+			neigh_index = local_tri_neighbour[e + k * _local_cell_num];
 			// 如果该单元为虚拟单元，根据虚拟单元生成规则，必定是0号边
 			if ( neigh_index>=_local_triangle_num )
 			{
-				cout<<"dayu"<<endl;
 				local_tri_sharedEdge[e+k*_local_cell_num] = 0;
 			}
 			else
 			{
-				cout<<"xiaoyu"<<endl;
 				edge_index = tri_edge[elem_index[e]*TRIANGLE_EDGES+k];
-				if ( edge_index==tri_edge[neigh_index*TRIANGLE_EDGES] )
+				if ( edge_index==tri_edge[elem_index[neigh_index]*TRIANGLE_EDGES] )
 				{
-					tri_sharedEdge[e+k*_cell_num] = 0;
+					local_tri_sharedEdge[e+k*_cell_num] = 0;
 				} 
-				else if ( edge_index==tri_edge[neigh_index*TRIANGLE_EDGES+1] )
+				else if ( edge_index==tri_edge[elem_index[neigh_index]*TRIANGLE_EDGES+1] )
 				{
-					tri_sharedEdge[e+k*_cell_num] = 1;
+					local_tri_sharedEdge[e+k*_cell_num] = 1;
 				}
-				else if ( edge_index==tri_edge[neigh_index*TRIANGLE_EDGES+2] )
+				else if ( edge_index==tri_edge[elem_index[neigh_index]*TRIANGLE_EDGES+2] )
 				{
-					tri_sharedEdge[e+k*_cell_num] = 2;
+					local_tri_sharedEdge[e+k*_cell_num] = 2;
 				}
 				else
 				{

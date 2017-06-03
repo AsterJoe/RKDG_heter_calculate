@@ -38,14 +38,17 @@ void CCUDARkdgSolver::detectCUDADevice( void )
 
 	cudaGetDeviceCount( &count );
 
-	if ( 0==count )
-		throw CMyException("No device surpports CUDA found!");
+	/*if ( 0==count )
+		throw CMyException("No device surpports CUDA found!");*/
+	if ( count < nprocs) {
+		throw CMyException("No enough device surpports CUDA found!");
+	}
 
 	cudaDeviceProp prop;
 
 	bool double_support(false);
 
-	for ( int i=0; i<count; ++i )
+	/*for ( int i=0; i<count; ++i )
 	{
 		cudaGetDeviceProperties( &prop, i );
 		if ( prop.major>1 )
@@ -56,17 +59,35 @@ void CCUDARkdgSolver::detectCUDADevice( void )
 	}
 
 	if ( !double_support )
-		throw CMyException("No device has capability of 2.0 or higher is found!");
+		throw CMyException("No device has capability of 2.0 or higher is found!");*/
 
-	memset( &prop, 0, sizeof(cudaDeviceProp) );
+	int double_support_count(0);
+	for ( int i=0; i<count; ++i )
+	{
+		cudaGetDeviceProperties( &prop, i );
+		if ( prop.major>1 )
+		{
+			double_support_count++;
+			if (double_support_count == myid) {
+				cudaSetDevice(i);
+			}
+			break;
+		}
+	}
+
+	if ( double_support_count < nprocs )
+		throw CMyException("No enough device has capability of 2.0 or higher is found!");
+
+	/*memset( &prop, 0, sizeof(cudaDeviceProp) );
 	prop.major = 2;
 	prop.minor = 0;
 
 	int devid;
 
-	cudaChooseDevice(&devid, &prop);
 
-	cout<<"\nThere are "<<count<<" device surpports CUDA, and the "<<devid+1<<"th device will be used."<<endl;
+	cudaChooseDevice(&devid, &prop);*/
+
+	//cout<<"\nThere are "<<count<<" device surpports CUDA, and the "<<devid+1<<"th device will be used."<<endl;
 }
 
 void CCUDARkdgSolver::initConfig(void)
@@ -148,8 +169,8 @@ void CCUDARkdgSolver::run(int myid, int nprocs)
 	fout<<mt.getCurrentTime()<<": programs starts"<<endl;
 
 	// 检查CUDA设备
-//	detectCUDADevice();
-//	fout<<mt.getCurrentTime()<<": Device with capability of 2.0 is found."<<endl;
+	detectCUDADevice();
+	fout<<mt.getCurrentTime()<<": Device with capability of 2.0 is found."<<endl;
 
 	
 	// 初始化程序配置并输出程序配置
@@ -197,25 +218,30 @@ void CCUDARkdgSolver::run(int myid, int nprocs)
 
 	fout<<mt.getCurrentTime()<<": begin to solve flow."<<endl<<endl;
 	/** 时间推进*/
-	mt.beginTimer();
-	rkdgAdvance();
-	mt.endTimer();
+	//mt.beginTimer();
+	//rkdgAdvance();
+	fout.close();
+}
+
+void CCUDARkdgSolver::runAfter()
+{
+	//mt.endTimer();
 	
-	fout<<"RKDG performance:"<<endl;
-	fout<<"CPU time:  "<<mt.getCPUElapsedTime()<<" s"<<endl;
-	fout<<"wall time: "<<mt.getWallElapsedTime()<<" s"<<endl<<endl;
+	//fout<<"RKDG performance:"<<endl;
+	//fout<<"CPU time:  "<<mt.getCPUElapsedTime()<<" s"<<endl;
+	//fout<<"wall time: "<<mt.getWallElapsedTime()<<" s"<<endl<<endl;
 	
-	fout<<mt.getCurrentTime()<<": complete solving flow."<<endl;
+	//fout<<mt.getCurrentTime()<<": complete solving flow."<<endl;
 
 	// 复制自由度到本地
 	copyFreedomToHost();
 	
 	// 输出解
-	outputSolution();
+	//outputSolution();
 
-	fout<<mt.getCurrentTime()<<": complete solution output."<<endl;
+	//fout<<mt.getCurrentTime()<<": complete solution output."<<endl;
 	
-	fout.close();
+	//fout.close();
 }
 
 void CCUDARkdgSolver::copyFreedomToHost()
@@ -578,254 +604,254 @@ void CCUDARkdgSolver::calculateResidual(int tnum)
 		);
 }
 
-void CCUDARkdgSolver::rkdgAdvance(void)
-{
-	ofstream fout;
-	if ( log_history=='Y' )
-	{
-		fout.open(residual_file.c_str());
-		if ( !fout )
-			throw CMyException("Failed to open residual log file: "+residual_file);
+//void CCUDARkdgSolver::rkdgAdvance(void)
+//{
+//	ofstream fout;
+//	if ( log_history=='Y' )
+//	{
+//		fout.open(residual_file.c_str());
+//		if ( !fout )
+//			throw CMyException("Failed to open residual log file: "+residual_file);
+//
+//		fout<<"N, rho"<<endl;
+//	}
+//	
+//	
+//	double nt(0);
+//	int count(0);
+//
+//	/*int tnum = grid.getTriangleNumber();
+//	int num  = grid.getCellNumber();*/
+//	int tnum = grid.getLocalTriangleNumber();
+//	int num = grid.getLocalCellNumber();
+//
+//
+//	int blocks = (tnum%threads_per_block) ? tnum/threads_per_block+1 : tnum/threads_per_block;
+//
+//	double ut   = sqrt(gamma*pref/rhoref)*mach;
+//	double rhou = rhoref*ut*cos(alpha);
+//	double rhov = rhoref*ut*sin(alpha);
+//	double rhoE = 0.5*rhoref*(ut*ut) + pref/(gamma-1);
+//
+//	bool copy(false);
+//
+//	cudaError_t error;
+//	size_t pitch = _cuarrays.getDoublePitch();
+//	int pitch_num = pitch / sizeof(double);
+//	int ipitch_num = _cuarrays.getIntPitch() / sizeof(int);
+//
+//	cudaEvent_t time_start, time_stop;
+//
+//	cudaEventCreateWithFlags(&time_start, cudaEventDisableTiming|cudaEventBlockingSync);
+//	cudaEventCreateWithFlags(&time_stop,  cudaEventDisableTiming|cudaEventBlockingSync);
+//
+//	if ( log_history=='Y' )
+//		copy = true;
+//
+//	// 确保之前CUDA的初始化工作都已经完成
+//	cudaDeviceSynchronize();
+//
+//	do 
+//	{
+//		++ count;
+//		
+//		cudaEventRecord(time_start);
+//		// 计算当前时间步长
+//		getTimeStep(tnum);
+//
+//		cudaEventRecord(time_stop);
+//
+//		// 保存旧自由度
+//		/*cudaMemcpy2DAsync(_cuarrays.freedom_rho_old,  pitch, _cuarrays.freedom_rho,  pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyDeviceToDevice);							  
+//		cudaMemcpy2DAsync(_cuarrays.freedom_rhou_old, pitch, _cuarrays.freedom_rhou, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyDeviceToDevice);							  
+//		cudaMemcpy2DAsync(_cuarrays.freedom_rhov_old, pitch, _cuarrays.freedom_rhov, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyDeviceToDevice);							 
+//		cudaMemcpy2DAsync(_cuarrays.freedom_rhoE_old, pitch, _cuarrays.freedom_rhoE, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyDeviceToDevice);*/
+//			
+//		cudaMemcpy2DAsync(_freedom_rho, pitch, _cuarrays.freedom_rho, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyDeviceToHost);
+//		cudaMemcpy2DAsync(_freedom_rho, pitch, _cuarrays.freedom_rho, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyDeviceToHost);
+//		cudaMemcpy2DAsync(_freedom_rho, pitch, _cuarrays.freedom_rho, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyDeviceToHost);
+//		cudaMemcpy2DAsync(_freedom_rho, pitch, _cuarrays.freedom_rho, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyDeviceToHost);
+//
+//		
+//
+//		MPI_Request request[4], request1;
+//		MPI_Status status;
+//		int x = 1;         //通知其他节点信息交换，0表示结束
+//		if(myid = 0 && count % 5 == 0) {
+//			for (int i = 1; i < nprocs; i++) {
+//				MPI_Isend(&x, 1, MPI_INT, i, 0, MPI_COMM_WORLD, &request1);
+//			}
+//			commuInfo();
+//		} else if(myid != 0) {
+//			int flag;
+//			MPI_Status status;
+//			if (count == 0) {
+//				MPI_Irecv(&x,1, MPI_INT, 0, 0, MPI_COMM_WORLD, &request1);
+//			} 
+//			MPI_Test(&request1, &flag, &status);
+//			if (flag == 1 && x == 1) {
+//				commuInfo();
+//				MPI_Irecv(&x,1, MPI_INT, 0, 0, MPI_COMM_WORLD, &request1);
+//			}
+//		}
+//
+//		
+//		for ( int i=0; i<RUNGE_KUTTA_STEPS; ++i )
+//		{
+//			// 计算守恒量的值
+//			calculateConVars(tnum, pitch_num, blocks);
+//
+//			// 处理边界条件
+//			boundaryCondition(tnum, num, pitch_num, rhoref, rhou, rhov, rhoE);
+//
+//			// 计算体积分残差
+//			calculateVolumeRHS(tnum, pitch_num, blocks);
+//
+//			// 计算LF通量系数
+//			calculateLFCoeff(tnum, ipitch_num, pitch_num, blocks);
+//
+//			// 计算f, g在边上的值
+//			calculateEdgeFG(tnum, num, pitch_num, blocks);
+//
+//			calculateFlux(tnum, ipitch_num, pitch_num, blocks);
+//
+//			// 计算线积分残差
+//			calculateEdgeRHS(tnum, pitch_num, blocks);
+//
+//			// 时间推进
+//			switch (i)
+//			{
+//			case 0:
+//				cudaEventSynchronize(time_stop);
+//
+//				// 将时间步长传送到本地
+//				cudaMemcpy(_dt, _cuarrays.ddt, sizeof(double), cudaMemcpyDeviceToHost);
+//
+//				if ( 0==(count-1)%print_interval )
+//					cout<<"Step: "<<count<<", time step: "<<_dt[0]<<endl;
+//
+//				if ( (_terminal_time-nt)<_dt[0] )
+//				{
+//					_dt[0] = _terminal_time -  nt;
+//				}
+//
+//				// 时间步推进
+//				rkdgStepOne(_dt[0], tnum, pitch_num, blocks);
+//
+//				break;
+//
+//			case 1:
+//				rkdgStepTwo(_dt[0], tnum, pitch_num, blocks);
+//				break;
+//
+//			case 2:
+//				rkdgStepThree(_dt[0], tnum, pitch_num, blocks);
+//				break;
+//
+//			default:
+//				throw CMyException("impossible case!");
+//				break;
+//			}
+//		}
+//
+//		
+//		if ( copy && (count-1) )
+//		{
+//			// 复制残差数据
+//			cudaMemcpy(_residual, _cuarrays.residual,
+//						sizeof(double)*RESIDUAL_VARS, cudaMemcpyDeviceToHost);
+//
+//			if ( 0==(count-1)%print_interval )
+//				cout<<"Current time: "<<nt<<"   rhomax: "<<_residual[0]/rhoref<<"   E: "<<_residual[1]/rhoE<<endl;
+//
+//			fout<<count<<"   "<<log(_residual[0]/rhoref)/log(10.0)<<endl;
+//		}
+//
+//		// 计算残差
+//		calculateResidual(tnum);
+//
+//		
+//		// 计时推进
+//		nt += _dt[0];
+//
+//		error = cudaPeekAtLastError();
+//		if ( error!=cudaSuccess )
+//			throw CMyException(cudaGetErrorString(error));
+//
+//	} while ( nt<_terminal_time );
+//
+//	cudaDeviceSynchronize();
+//	
+//	if ( copy )
+//	{
+//		// 复制残差数据
+//		cudaMemcpy(_residual, _cuarrays.residual,
+//			sizeof(double)*RESIDUAL_VARS, cudaMemcpyDeviceToHost);
+//
+//		if ( 0==(count-1)%print_interval )
+//			cout<<"当前时间： "<<nt-_dt[0]<<"   rhomax: "<<_residual[0]/rhoref<<"   E: "<<_residual[1]/rhoE<<endl;
+//
+//		fout<<count<<"   "<<log(_residual[0]/rhoref)/log(10.0)<<endl;
+//	}
+//
+//
+//	cudaEventDestroy(time_start);
+//	cudaEventDestroy(time_stop);
+//
+//	if ( log_history=='Y' )
+//		fout.close();
+//
+//}
 
-		fout<<"N, rho"<<endl;
-	}
-	
-	
-	double nt(0);
-	int count(0);
+//void CCUDARkdgSolver::commuInfo() {
+//	MPI_Request request;
+//		
+//	int *rho_buffer, *rhou_buffer, *rhov_buffer, *rhoE_buffer;
+//	for (int i = 0; i < nprocs - 1; i++) {
+//		int num = grid.local_innerBoundary_index[i].size();
+//		rho_buffer = new int[num];
+//		rhou_buffer = new int[num];
+//		rhov_buffer = new int[num];
+//		rhoE_buffer = new int[num];
+//		for (int j = 0; j < num; j++) {
+//			rho_buffer[j] = _cuarrays.freedom_rho[grid.local_innerBoundary_index[i].at(j)];
+//			rhou_buffer[j] = _cuarrays.freedom_rhou[grid.local_innerBoundary_index[i].at(j)];
+//			rhov_buffer[j] = _cuarrays.freedom_rhov[grid.local_innerBoundary_index[i].at(j)];
+//			rhoE_buffer[j] = _cuarrays.freedom_rhoE[grid.local_innerBoundary_index[i].at(j)];
+//		}
+//		int dest = i < myid ? i : i + 1;
+//		MPI_Isend(rho_buffer, num, MPI_DOUBLE, dest, 1 + 4 * num_commu, MPI_COMM_WORLD, &request);
+//		MPI_Isend(rhou_buffer, num, MPI_DOUBLE, dest, 2 + 4 * num_commu, MPI_COMM_WORLD, &request);
+//		MPI_Isend(rhov_buffer, num, MPI_DOUBLE, dest, 3 + 4 * num_commu, MPI_COMM_WORLD, &request);
+//		MPI_Isend(rhoE_buffer, num, MPI_DOUBLE, dest, 4 + 4 * num_commu, MPI_COMM_WORLD, &request);
+//			
+//		MPI_Irecv(rho_buffer, num, MPI_DOUBLE, dest, 1 + 4 * num_commu, MPI_COMM_WORLD, &request);
+//		MPI_Irecv(rhou_buffer, num, MPI_DOUBLE, dest, 2 + 4 * num_commu, MPI_COMM_WORLD, &request);
+//		MPI_Irecv(rhov_buffer, num, MPI_DOUBLE, dest, 3 + 4 * num_commu, MPI_COMM_WORLD, &request);
+//		MPI_Irecv(rhoE_buffer, num, MPI_DOUBLE, dest, 4 + 4 * num_commu++, MPI_COMM_WORLD, &request);	
+//	}
+//	MPI_Barrier(MPI_COMM_WORLD);
+//	dealCommuData();
+//}
+//
+//void CCUDARkdgSolver::dealCommuData() {
+//	size_t pitch = _cuarrays.getDoublePitch();
+//	for (int i = 0; i < nprocs - 1; i++) {
+//		for (int j = 0; j < grid.local_innerBoundary_index[i].size(); j++) {
+//			_freedom_rho[grid.local_innerBoundary_index[i].at(j)] =  rho_buffer[j];
+//			_freedom_rhou[grid.local_innerBoundary_index[i].at(j)] = rhou_buffer[j];
+//			_freedom_rhov[grid.local_innerBoundary_index[i].at(j)] = rhov_buffer[j];
+//			_freedom_rhoE[grid.local_innerBoundary_index[i].at(j)] = rhoE_buffer[j];
+//		}
+//	}
+//
+//	cudaMemcpy2DAsync(_cuarrays.freedom_rho, pitch, _freedom_rho, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyHostToDevice);
+//	cudaMemcpy2DAsync(_cuarrays.freedom_rhou, pitch, _freedom_rhou, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyHostToDevice);
+//	cudaMemcpy2DAsync(_cuarrays.freedom_rhov, pitch, _freedom_rhov, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyHostToDevice);
+//	cudaMemcpy2DAsync(_cuarrays.freedom_rhoE, pitch, _freedom_rhoE, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyHostToDevice);
+//}
 
-	/*int tnum = grid.getTriangleNumber();
-	int num  = grid.getCellNumber();*/
-	int tnum = grid.getLocalTriangleNumber();
-	int num = grid.getLocalCellNumber();
-
-
-	int blocks = (tnum%threads_per_block) ? tnum/threads_per_block+1 : tnum/threads_per_block;
-
-	double ut   = sqrt(gamma*pref/rhoref)*mach;
-	double rhou = rhoref*ut*cos(alpha);
-	double rhov = rhoref*ut*sin(alpha);
-	double rhoE = 0.5*rhoref*(ut*ut) + pref/(gamma-1);
-
-	bool copy(false);
-
-	cudaError_t error;
-	size_t pitch = _cuarrays.getDoublePitch();
-	int pitch_num = pitch / sizeof(double);
-	int ipitch_num = _cuarrays.getIntPitch() / sizeof(int);
-
-	cudaEvent_t time_start, time_stop;
-
-	cudaEventCreateWithFlags(&time_start, cudaEventDisableTiming|cudaEventBlockingSync);
-	cudaEventCreateWithFlags(&time_stop,  cudaEventDisableTiming|cudaEventBlockingSync);
-
-	if ( log_history=='Y' )
-		copy = true;
-
-	// 确保之前CUDA的初始化工作都已经完成
-	cudaDeviceSynchronize();
-
-	do 
-	{
-		++ count;
-		
-		cudaEventRecord(time_start);
-		// 计算当前时间步长
-		getTimeStep(tnum);
-
-		cudaEventRecord(time_stop);
-
-		// 保存旧自由度
-		/*cudaMemcpy2DAsync(_cuarrays.freedom_rho_old,  pitch, _cuarrays.freedom_rho,  pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyDeviceToDevice);							  
-		cudaMemcpy2DAsync(_cuarrays.freedom_rhou_old, pitch, _cuarrays.freedom_rhou, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyDeviceToDevice);							  
-		cudaMemcpy2DAsync(_cuarrays.freedom_rhov_old, pitch, _cuarrays.freedom_rhov, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyDeviceToDevice);							 
-		cudaMemcpy2DAsync(_cuarrays.freedom_rhoE_old, pitch, _cuarrays.freedom_rhoE, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyDeviceToDevice);*/
-			
-		cudaMemcpy2DAsync(_freedom_rho, pitch, _cuarrays.freedom_rho, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyDeviceToHost);
-		cudaMemcpy2DAsync(_freedom_rho, pitch, _cuarrays.freedom_rho, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyDeviceToHost);
-		cudaMemcpy2DAsync(_freedom_rho, pitch, _cuarrays.freedom_rho, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyDeviceToHost);
-		cudaMemcpy2DAsync(_freedom_rho, pitch, _cuarrays.freedom_rho, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyDeviceToHost);
-
-		
-
-		MPI_Request request[4], request1;
-		MPI_Status status;
-		int x = 1;         //通知其他节点信息交换，0表示结束
-		if(myid = 0 && count % 5 == 0) {
-			for (int i = 1; i < nprocs; i++) {
-				MPI_Isend(&x, 1, MPI_INT, i, 0, MPI_COMM_WORLD, &request1);
-			}
-			commuInfo();
-		} else if(myid != 0) {
-			int flag;
-			MPI_Status status;
-			if (count == 0) {
-				MPI_Irecv(&x,1, MPI_INT, 0, 0, MPI_COMM_WORLD, &request1);
-			} 
-			MPI_Test(&request1, &flag, &status);
-			if (flag == 1 && x == 1) {
-				commuInfo();
-				MPI_Irecv(&x,1, MPI_INT, 0, 0, MPI_COMM_WORLD, &request1);
-			}
-		}
-
-		
-		for ( int i=0; i<RUNGE_KUTTA_STEPS; ++i )
-		{
-			// 计算守恒量的值
-			calculateConVars(tnum, pitch_num, blocks);
-
-			// 处理边界条件
-			boundaryCondition(tnum, num, pitch_num, rhoref, rhou, rhov, rhoE);
-
-			// 计算体积分残差
-			calculateVolumeRHS(tnum, pitch_num, blocks);
-
-			// 计算LF通量系数
-			calculateLFCoeff(tnum, ipitch_num, pitch_num, blocks);
-
-			// 计算f, g在边上的值
-			calculateEdgeFG(tnum, num, pitch_num, blocks);
-
-			calculateFlux(tnum, ipitch_num, pitch_num, blocks);
-
-			// 计算线积分残差
-			calculateEdgeRHS(tnum, pitch_num, blocks);
-
-			// 时间推进
-			switch (i)
-			{
-			case 0:
-				cudaEventSynchronize(time_stop);
-
-				// 将时间步长传送到本地
-				cudaMemcpy(_dt, _cuarrays.ddt, sizeof(double), cudaMemcpyDeviceToHost);
-
-				if ( 0==(count-1)%print_interval )
-					cout<<"Step: "<<count<<", time step: "<<_dt[0]<<endl;
-
-				if ( (_terminal_time-nt)<_dt[0] )
-				{
-					_dt[0] = _terminal_time -  nt;
-				}
-
-				// 时间步推进
-				rkdgStepOne(_dt[0], tnum, pitch_num, blocks);
-
-				break;
-
-			case 1:
-				rkdgStepTwo(_dt[0], tnum, pitch_num, blocks);
-				break;
-
-			case 2:
-				rkdgStepThree(_dt[0], tnum, pitch_num, blocks);
-				break;
-
-			default:
-				throw CMyException("impossible case!");
-				break;
-			}
-		}
-
-		
-		if ( copy && (count-1) )
-		{
-			// 复制残差数据
-			cudaMemcpy(_residual, _cuarrays.residual,
-						sizeof(double)*RESIDUAL_VARS, cudaMemcpyDeviceToHost);
-
-			if ( 0==(count-1)%print_interval )
-				cout<<"Current time: "<<nt<<"   rhomax: "<<_residual[0]/rhoref<<"   E: "<<_residual[1]/rhoE<<endl;
-
-			fout<<count<<"   "<<log(_residual[0]/rhoref)/log(10.0)<<endl;
-		}
-
-		// 计算残差
-		calculateResidual(tnum);
-
-		
-		// 计时推进
-		nt += _dt[0];
-
-		error = cudaPeekAtLastError();
-		if ( error!=cudaSuccess )
-			throw CMyException(cudaGetErrorString(error));
-
-	} while ( nt<_terminal_time );
-
-	cudaDeviceSynchronize();
-	
-	if ( copy )
-	{
-		// 复制残差数据
-		cudaMemcpy(_residual, _cuarrays.residual,
-			sizeof(double)*RESIDUAL_VARS, cudaMemcpyDeviceToHost);
-
-		if ( 0==(count-1)%print_interval )
-			cout<<"当前时间： "<<nt-_dt[0]<<"   rhomax: "<<_residual[0]/rhoref<<"   E: "<<_residual[1]/rhoE<<endl;
-
-		fout<<count<<"   "<<log(_residual[0]/rhoref)/log(10.0)<<endl;
-	}
-
-
-	cudaEventDestroy(time_start);
-	cudaEventDestroy(time_stop);
-
-	if ( log_history=='Y' )
-		fout.close();
-
-}
-
-void CCUDARkdgSolver::commuInfo() {
-	MPI_Request request;
-		
-	int *rho_buffer, *rhou_buffer, *rhov_buffer, *rhoE_buffer;
-	for (int i = 0; i < nprocs - 1; i++) {
-		int num = grid.local_innerBoundary_index[i].size();
-		rho_buffer = new int[num];
-		rhou_buffer = new int[num];
-		rhov_buffer = new int[num];
-		rhoE_buffer = new int[num];
-		for (int j = 0; j < num; j++) {
-			rho_buffer[j] = _cuarrays.freedom_rho[grid.local_innerBoundary_index[i].at(j)];
-			rhou_buffer[j] = _cuarrays.freedom_rhou[grid.local_innerBoundary_index[i].at(j)];
-			rhov_buffer[j] = _cuarrays.freedom_rhov[grid.local_innerBoundary_index[i].at(j)];
-			rhoE_buffer[j] = _cuarrays.freedom_rhoE[grid.local_innerBoundary_index[i].at(j)];
-		}
-		int dest = i < myid ? i : i + 1;
-		MPI_Isend(rho_buffer, num, MPI_DOUBLE, dest, 1 + 4 * num_commu, MPI_COMM_WORLD, &request);
-		MPI_Isend(rhou_buffer, num, MPI_DOUBLE, dest, 2 + 4 * num_commu, MPI_COMM_WORLD, &request);
-		MPI_Isend(rhov_buffer, num, MPI_DOUBLE, dest, 3 + 4 * num_commu, MPI_COMM_WORLD, &request);
-		MPI_Isend(rhoE_buffer, num, MPI_DOUBLE, dest, 4 + 4 * num_commu, MPI_COMM_WORLD, &request);
-			
-		MPI_Irecv(rho_buffer, num, MPI_DOUBLE, dest, 1 + 4 * num_commu, MPI_COMM_WORLD, &request);
-		MPI_Irecv(rhou_buffer, num, MPI_DOUBLE, dest, 2 + 4 * num_commu, MPI_COMM_WORLD, &request);
-		MPI_Irecv(rhov_buffer, num, MPI_DOUBLE, dest, 3 + 4 * num_commu, MPI_COMM_WORLD, &request);
-		MPI_Irecv(rhoE_buffer, num, MPI_DOUBLE, dest, 4 + 4 * num_commu++, MPI_COMM_WORLD, &request);	
-	}
-	MPI_Barrier(MPI_COMM_WORLD);
-	dealCommuData();
-}
-
-void CCUDARkdgSolver::dealCommuData() {
-	size_t pitch = _cuarrays.getDoublePitch();
-	for (int i = 0; i < nprocs - 1; i++) {
-		for (int j = 0; j < grid.local_innerBoundary_index[i].size(); j++) {
-			_freedom_rho[grid.local_innerBoundary_index[i].at(j)] =  rho_buffer[j];
-			_freedom_rhou[grid.local_innerBoundary_index[i].at(j)] = rhou_buffer[j];
-			_freedom_rhov[grid.local_innerBoundary_index[i].at(j)] = rhov_buffer[j];
-			_freedom_rhoE[grid.local_innerBoundary_index[i].at(j)] = rhoE_buffer[j];
-		}
-	}
-
-	cudaMemcpy2DAsync(_cuarrays.freedom_rho, pitch, _freedom_rho, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyHostToDevice);
-	cudaMemcpy2DAsync(_cuarrays.freedom_rhou, pitch, _freedom_rhou, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyHostToDevice);
-	cudaMemcpy2DAsync(_cuarrays.freedom_rhov, pitch, _freedom_rhov, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyHostToDevice);
-	cudaMemcpy2DAsync(_cuarrays.freedom_rhoE, pitch, _freedom_rhoE, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyHostToDevice);
-}
-
-void CCUDARkdgSolver::outputSolution()
+void CCUDARkdgSolver::outputSolution(double* result_rho, double* result_rhou, double* result_rhov, double* result_rhoE)
 {
 	ofstream fout(solution_file.c_str());
 	if ( !fout )
@@ -868,7 +894,7 @@ void CCUDARkdgSolver::outputSolution()
 
 	for ( i=0; i<tnum; ++i )
 	{
-		fout<<_freedom_rho[i]<<"  ";
+		fout<<result_rho[i]<<"  ";
 		if ( i%6==0 )
 		{
 			fout<<endl;
@@ -878,7 +904,7 @@ void CCUDARkdgSolver::outputSolution()
 
 	for ( i=0; i<tnum; ++i )
 	{
-		fout<<_freedom_rhou[i]/_freedom_rho[i]<<"  ";
+		fout<<result_rhou[i]/result_rho[i]<<"  ";
 		if ( i%6==0 )
 		{
 			fout<<endl;
@@ -888,7 +914,7 @@ void CCUDARkdgSolver::outputSolution()
 
 	for ( i=0; i<tnum; ++i )
 	{
-		fout<<_freedom_rhov[i]/_freedom_rho[i]<<"  ";
+		fout<<result_rhov[i]/result_rho[i]<<"  ";
 		if ( i%6==0 )
 		{
 			fout<<endl;
@@ -898,10 +924,10 @@ void CCUDARkdgSolver::outputSolution()
 
 	for ( i=0; i<tnum; ++i )
 	{
-		rho = _freedom_rho[i];
-		u	= _freedom_rhou[i]/rho;
-		v	= _freedom_rhov[i]/rho;
-		rhoE = _freedom_rhoE[i];
+		rho = result_rho[i];
+		u	= result_rhou[i]/rho;
+		v	= result_rhov[i]/rho;
+		rhoE = result_rhoE[i];
 
 		p = (gamma-1)*(rhoE-0.5*rho*(u*u+v*v));
 
@@ -915,10 +941,10 @@ void CCUDARkdgSolver::outputSolution()
 
 	for ( i=0; i<tnum; ++i )
 	{
-		rho = _freedom_rho[i];
-		u	= _freedom_rhou[i]/rho;
-		v	= _freedom_rhov[i]/rho;
-		rhoE = _freedom_rhoE[i];
+		rho = result_rho[i];
+		u	= result_rhou[i]/rho;
+		v	= result_rhov[i]/rho;
+		rhoE = result_rhoE[i];
 
 		p = (gamma-1)*(rhoE-0.5*rho*(u*u+v*v));
 		a = sqrt(gamma*p/rho);

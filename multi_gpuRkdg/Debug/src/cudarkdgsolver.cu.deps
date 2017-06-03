@@ -562,18 +562,17 @@ C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\xloctime
 d:\documents\visual studio 2010\projects\multi_gpurkdg\multi_gpurkdg\inc\config.h
 d:\documents\visual studio 2010\projects\multi_gpurkdg\multi_gpurkdg\inc\myexception.h
 d:\documents\visual studio 2010\projects\multi_gpurkdg\multi_gpurkdg\inc\unstructuredgrid.h
+C:\Program Files (x86)\MPICH2\include\mpi.h
+c:\program files (x86)\mpich2\include\mpio.h
+c:\program files (x86)\mpich2\include\mpi.h
 d:\documents\visual studio 2010\projects\multi_gpurkdg\multi_gpurkdg\inc\vertice2d.h
 d:\documents\visual studio 2010\projects\multi_gpurkdg\multi_gpurkdg\inc\edge.h
 d:\documents\visual studio 2010\projects\multi_gpurkdg\multi_gpurkdg\inc\triangleinfo.h
 d:\documents\visual studio 2010\projects\multi_gpurkdg\multi_gpurkdg\inc\gauss.h
 d:\documents\visual studio 2010\projects\multi_gpurkdg\multi_gpurkdg\inc\defines.h
 C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\set
-C:\Program Files (x86)\MPICH2\include\mpi.h
-c:\program files (x86)\mpich2\include\mpio.h
-c:\program files (x86)\mpich2\include\mpi.h
 d:\documents\visual studio 2010\projects\multi_gpurkdg\multi_gpurkdg\inc\cudaarrays.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include\cuda_runtime.h
 d:\documents\visual studio 2010\projects\multi_gpurkdg\multi_gpurkdg\inc\kernelfunctions.cuh
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include\cuda_runtime.h
 d:\documents\visual studio 2010\projects\multi_gpurkdg\multi_gpurkdg\inc\mytime.h
-C:\Program Files (x86)\MPICH2\include\mpi.h

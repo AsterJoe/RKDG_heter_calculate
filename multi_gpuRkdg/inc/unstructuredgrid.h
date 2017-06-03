@@ -7,6 +7,7 @@
  
 #pragma once
 
+#include<mpi.h>
 #include "cppstdheaders.h"
 #include "vertice2d.h"
 #include "edge.h"
@@ -14,7 +15,7 @@
 #include "triangleinfo.h"
 #include "defines.h"
 #include<set>
-#include<mpi.h>
+#include<time.h>
 using namespace std;
 
 extern "C"{
@@ -35,6 +36,7 @@ extern "C"{
 class CUnstructuredGrid {
 	// 属性
 	public:
+		time_t t_start, t_end;
 		MPI_Status status;
 		MPI_Request request;
 
@@ -50,7 +52,6 @@ class CUnstructuredGrid {
 
 		vector<int>* local_innerBoundary_index;
 		vector<int>* neigh_innerBoundary_index;
-		vector<int>* innerBoundary_edge;
 		//此信息需要发送到其他节点
 		//int** innerBoundary_index;
 
@@ -94,11 +95,15 @@ class CUnstructuredGrid {
 		 */
 		void parseGhostNum(const string& trineigh_filename);
 
+		void parseLocalGhostNum();
+
 		/** 初始化网格数据 */
 		void initializeGrid(int gpu_index, int nprocs);
 		
 		/** 初始化三角形数据 */
 		void initializeTriangleInfos(void);
+
+		void initLocalTriNeigh(void);
 		
 		/** 
 		 * 导入三角形顶点编号
