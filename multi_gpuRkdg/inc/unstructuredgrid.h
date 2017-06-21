@@ -7,7 +7,6 @@
  
 #pragma once
 
-#include<mpi.h>
 #include "cppstdheaders.h"
 #include "vertice2d.h"
 #include "edge.h"
@@ -36,9 +35,8 @@ extern "C"{
 class CUnstructuredGrid {
 	// 属性
 	public:
+		int area_index;
 		time_t t_start, t_end;
-		MPI_Status status;
-		MPI_Request request;
 
 		string config_file;				/**< 网格配置文件 */
 		string output_filename;			/**< 网格输出文件 */
@@ -69,7 +67,6 @@ class CUnstructuredGrid {
 		
 	protected:
 		int nprocs;
-		int area_index;
 		int _vertice_num;				/**< 顶点数目 */
 		int _edge_num;					/**< 边数目 */
 		int _triangle_num;				/**< 三角形数目 */
@@ -99,6 +96,8 @@ class CUnstructuredGrid {
 
 		/** 初始化网格数据 */
 		void initializeGrid(int gpu_index, int nprocs);
+
+		void initializeGridNext();
 		
 		/** 初始化三角形数据 */
 		void initializeTriangleInfos(void);
@@ -186,6 +185,8 @@ class CUnstructuredGrid {
 
 		void initLocalSharedEdge(void);
 
+		void initLocalTriFlag(void);
+
 		/** 标记网格边界条件 */
 		void markBoundaryTriangles(void);
 
@@ -197,6 +198,7 @@ class CUnstructuredGrid {
 		/** 测试网格单元是不是都是逆时针编号 */
 		void testTrianglesAntiwise(void) const;
 		
+		void testLocalTriangleAntiwise(void);
 		/**
 		 * 输出计算网格(包括虚拟网格)
 		 * @param[in] filename string 虚拟网格输出文件

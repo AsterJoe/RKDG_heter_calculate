@@ -38,8 +38,6 @@ class CCUDARkdgSolver {
 		int nprocs;
 		int num_commu;           /**< 信息交换的次数>*/
 
-		int *rho_buffer, *rhou_buffer, *rhov_buffer, *rhoE_buffer;
-
 		string title;				/**< 程序名称 */
 
 		double alpha;				/**< 翼型攻角 */
@@ -100,6 +98,8 @@ class CCUDARkdgSolver {
 
 		/** rkdg时间推进 */
 		//void rkdgAdvance(void);
+
+		void runNext();
 
 		void runAfter();
 		/**

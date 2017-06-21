@@ -57,6 +57,9 @@
     <ClInclude Include="inc\rkdgadvance.h">
       <Filter>inc</Filter>
     </ClInclude>
+    <ClInclude Include="inc\sendboundaryindex.h">
+      <Filter>inc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="input\EdgeVertice.dat">
@@ -101,6 +104,22 @@
     <None Include="..\..\Makefile">
       <Filter>input</Filter>
     </None>
+    <None Include="C:\Program Files (x86)\MPICH2\bin\output\ghostmesh.plt">
+      <Filter>input</Filter>
+    </None>
+    <None Include="C:\Program Files (x86)\MPICH2\bin\output\index.dat">
+      <Filter>input</Filter>
+    </None>
+    <None Include="C:\Program Files (x86)\MPICH2\bin\output\boundary.dat">
+      <Filter>input</Filter>
+    </None>
+    <None Include="I:\20170608\output-网格加密之后500步\obj_val.plt">
+      <Filter>inc</Filter>
+    </None>
+    <None Include="C:\Program Files (x86)\MPICH2\bin\input\ElemDepart.dat">
+      <Filter>input</Filter>
+    </None>
+    <None Include="ClassDiagram1.cd" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\config.cpp">
@@ -138,6 +157,12 @@
     </ClCompile>
     <ClCompile Include="src\rkdgadvance.cpp">
       <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\sendboundaryindex.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\rkdg\rkdg\src\unstructuredgrid.cpp">
+      <Filter>input</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

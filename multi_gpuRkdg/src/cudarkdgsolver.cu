@@ -37,12 +37,12 @@ void CCUDARkdgSolver::detectCUDADevice( void )
 	int count(0);
 
 	cudaGetDeviceCount( &count );
-
+	cout<<"count:"<<count;
 	/*if ( 0==count )
 		throw CMyException("No device surpports CUDA found!");*/
-	if ( count < nprocs) {
-		throw CMyException("No enough device surpports CUDA found!");
-	}
+	//if ( count < nprocs) {
+	//	throw CMyException("No enough device surpports CUDA found!");
+	//}
 
 	cudaDeviceProp prop;
 
@@ -71,12 +71,12 @@ void CCUDARkdgSolver::detectCUDADevice( void )
 			if (double_support_count == myid) {
 				cudaSetDevice(i);
 			}
-			break;
 		}
+		cout<<"gpu("<<i<<"):"<<prop.major<<"."<<prop.minor<<endl;
 	}
 
-	if ( double_support_count < nprocs )
-		throw CMyException("No enough device has capability of 2.0 or higher is found!");
+//	if ( double_support_count < nprocs )
+//		throw CMyException("No enough device has capability of 2.0 or higher is found!");
 
 	/*memset( &prop, 0, sizeof(cudaDeviceProp) );
 	prop.major = 2;
@@ -185,42 +185,53 @@ void CCUDARkdgSolver::run(int myid, int nprocs)
 
 	// 初始化网格
 	grid.config_file = gridconf;
-	grid.initializeGrid(0, 5);
+	grid.initializeGrid(myid, nprocs);
+	fout.close();
+}
+
+void CCUDARkdgSolver::runNext() {
+	cout<<"runNext"<<endl;
+	grid.initializeGridNext();
 	grid.outputGrid();
 	grid.outputGridWithGhostCells("output/ghostmesh.plt");
 	
-	fout<<mt.getCurrentTime()<<": complete grid initialization."<<endl;
+	//fout<<mt.getCurrentTime()<<": complete grid initialization."<<endl;
 
 	// 测试三角形顶点是否逆时针排序
-	grid.testTrianglesAntiwise();
-	
+//	grid.testTrianglesAntiwise();
+	grid.testLocalTriangleAntiwise();
+
 	// 初始化网格上基函数等信息
 //	grid.triangle_infos.allocateMemory(grid.getCellNumber());
 	grid.triangle_infos.allocateMemory(grid.getLocalCellNumber());
 	grid.initializeTriangleInfos();
-	
-	fout<<mt.getCurrentTime()<<": complete grid information initialization."<<endl;
+
+//	fout<<mt.getCurrentTime()<<": complete grid information initialization."<<endl;
 
 	// 标记网格单元
-	grid.markBoundaryTriangles();
-	
+//	grid.markBoundaryTriangles();
+	grid.markLocalBoundaryTriangles();
+	/*for (int i = 0; i < grid.getLocalCellNumber(); i++) {
+		cout<<"flag"<<grid.area_index<<":"<<grid.local_tri_flag[i]<<endl;
+	}*/
 	// 分配GPU内存
 //	_cuarrays.allocateMemory(grid.getCellNumber());
-	_cuarrays.allocateMemory(grid.getLocalCellNumber());
 
+	_cuarrays.allocateMemory(grid.getLocalCellNumber());
+	cout<<"ab"<<endl;
 	// 将三角单元信息传送到GPU
 	copyTriangleInfosToGPU();
-
+	cout<<"cd"<<endl;
 	// 初始化RKDG自由度，并将初始化数据传到GPU
 	initRKDG();
+	cout<<"ef"<<endl;
+//	fout<<mt.getCurrentTime()<<": program initialization complete."<<endl;
 
-	fout<<mt.getCurrentTime()<<": program initialization complete."<<endl;
-
-	fout<<mt.getCurrentTime()<<": begin to solve flow."<<endl<<endl;
+//	fout<<mt.getCurrentTime()<<": begin to solve flow."<<endl<<endl;
 	/** 时间推进*/
 	//mt.beginTimer();
 	//rkdgAdvance();
-	fout.close();
+//	fout.close();
 }
 
 void CCUDARkdgSolver::runAfter()
@@ -246,7 +257,7 @@ void CCUDARkdgSolver::runAfter()
 
 void CCUDARkdgSolver::copyFreedomToHost()
 {
-	size_t size = sizeof(double)*grid.getCellNumber();
+	size_t size = sizeof(double)*grid.getLocalCellNumber();
 	size_t pitch = _cuarrays.getDoublePitch();
 
 	cudaMemcpy2D(_freedom_rho,  size, _cuarrays.freedom_rho,  pitch, size, BASIS_FUNCTIONS, cudaMemcpyDeviceToHost);			  
@@ -263,7 +274,7 @@ void CCUDARkdgSolver::copyTriangleInfosToGPU(void)
 	int num = grid.getLocalCellNumber();
 	size_t int_pitch    = _cuarrays.getIntPitch();
 	size_t double_pitch = _cuarrays.getDoublePitch();
-	
+
 //	cudaMemcpy2DAsync(_cuarrays.neighbour, int_pitch, grid.tri_neighbour, sizeof(int)*num, sizeof(int)*num, TRIANGLE_EDGES, cudaMemcpyHostToDevice);
 	cudaMemcpy2DAsync(_cuarrays.neighbour, int_pitch, grid.local_tri_neighbour, sizeof(int)*num, sizeof(int)*num, TRIANGLE_EDGES, cudaMemcpyHostToDevice);
 
@@ -272,6 +283,13 @@ void CCUDARkdgSolver::copyTriangleInfosToGPU(void)
 
 //	cudaMemcpy2DAsync(_cuarrays.triangle_flag, int_pitch, grid.tri_flag, sizeof(int)*num, sizeof(int)*num, 1, cudaMemcpyHostToDevice);
 	cudaMemcpy2DAsync(_cuarrays.triangle_flag, int_pitch, grid.local_tri_flag, sizeof(int)*num, sizeof(int)*num, 1, cudaMemcpyHostToDevice);
+
+	if ( cudaPeekAtLastError() !=cudaSuccess )
+	{
+		cout<<"throw error previous!"<<endl;
+	} else {
+		cout<<"not throw error previous!"<<endl;
+	}
 
 	size_t gsize = sizeof(double)*num;
 
@@ -293,23 +311,23 @@ void CCUDARkdgSolver::copyTriangleInfosToGPU(void)
 
 	cudaMemcpy2DAsync(_cuarrays.edge_gauss_weight, double_pitch, grid.triangle_infos.edge_gauss_weight, gsize, gsize, EDGE_GPOINTS*TRIANGLE_EDGES, cudaMemcpyHostToDevice);*/
 
-	cudaMemcpy2DAsync(_cuarrays.area, double_pitch, grid.local_triangle_infos.area, gsize, gsize, 1, cudaMemcpyHostToDevice);
-	
-	cudaMemcpy2DAsync(_cuarrays.perimeter, double_pitch, grid.local_triangle_infos.perimeter, gsize, gsize, 1, cudaMemcpyHostToDevice);
+	cudaMemcpy2DAsync(_cuarrays.area, double_pitch, grid.triangle_infos.area, gsize, gsize, 1, cudaMemcpyHostToDevice);
 
-	cudaMemcpy2DAsync(_cuarrays.outer_normal_vector, double_pitch, grid.local_triangle_infos.outer_normal_vector, gsize, gsize, TRIANGLE_EDGES*2, cudaMemcpyHostToDevice);
+	cudaMemcpy2DAsync(_cuarrays.perimeter, double_pitch, grid.triangle_infos.perimeter, gsize, gsize, 1, cudaMemcpyHostToDevice);
 
-	cudaMemcpy2DAsync(_cuarrays.mass_coeff, double_pitch, grid.local_triangle_infos.mass_coeff, gsize, gsize, BASIS_FUNCTIONS, cudaMemcpyHostToDevice);
+	cudaMemcpy2DAsync(_cuarrays.outer_normal_vector, double_pitch, grid.triangle_infos.outer_normal_vector, gsize, gsize, TRIANGLE_EDGES*2, cudaMemcpyHostToDevice);
 
-	cudaMemcpy2DAsync(_cuarrays.vol_bf_value, double_pitch, grid.local_triangle_infos.vol_bf_value, gsize, gsize, VOLUME_GPOINTS*BASIS_FUNCTIONS, cudaMemcpyHostToDevice);
+	cudaMemcpy2DAsync(_cuarrays.mass_coeff, double_pitch, grid.triangle_infos.mass_coeff, gsize, gsize, BASIS_FUNCTIONS, cudaMemcpyHostToDevice);
 
-	cudaMemcpy2DAsync(_cuarrays.vol_bdf_value, double_pitch, grid.local_triangle_infos.vol_bdf_value, gsize, gsize, VOLUME_GPOINTS*BASIS_FUNCTIONS*2, cudaMemcpyHostToDevice);
+	cudaMemcpy2DAsync(_cuarrays.vol_bf_value, double_pitch, grid.triangle_infos.vol_bf_value, gsize, gsize, VOLUME_GPOINTS*BASIS_FUNCTIONS, cudaMemcpyHostToDevice);
 
-	cudaMemcpy2DAsync(_cuarrays.edge_bf_value, double_pitch, grid.local_triangle_infos.edge_bf_value, gsize, gsize, TRIANGLE_EDGES*EDGE_GPOINTS*BASIS_FUNCTIONS, cudaMemcpyHostToDevice);
+	cudaMemcpy2DAsync(_cuarrays.vol_bdf_value, double_pitch, grid.triangle_infos.vol_bdf_value, gsize, gsize, VOLUME_GPOINTS*BASIS_FUNCTIONS*2, cudaMemcpyHostToDevice);
 
-	cudaMemcpy2DAsync(_cuarrays.vol_gauss_weight, double_pitch, grid.local_triangle_infos.vol_gauss_weight, gsize, gsize,  VOLUME_GPOINTS, cudaMemcpyHostToDevice);
+	cudaMemcpy2DAsync(_cuarrays.edge_bf_value, double_pitch, grid.triangle_infos.edge_bf_value, gsize, gsize, TRIANGLE_EDGES*EDGE_GPOINTS*BASIS_FUNCTIONS, cudaMemcpyHostToDevice);
 
-	cudaMemcpy2DAsync(_cuarrays.edge_gauss_weight, double_pitch, grid.local_triangle_infos.edge_gauss_weight, gsize, gsize, EDGE_GPOINTS*TRIANGLE_EDGES, cudaMemcpyHostToDevice);
+	cudaMemcpy2DAsync(_cuarrays.vol_gauss_weight, double_pitch, grid.triangle_infos.vol_gauss_weight, gsize, gsize,  VOLUME_GPOINTS, cudaMemcpyHostToDevice);
+
+	cudaMemcpy2DAsync(_cuarrays.edge_gauss_weight, double_pitch, grid.triangle_infos.edge_gauss_weight, gsize, gsize, EDGE_GPOINTS*TRIANGLE_EDGES, cudaMemcpyHostToDevice);
 
 	if ( cudaPeekAtLastError()!=cudaSuccess )
 	{
@@ -561,7 +579,6 @@ void CCUDARkdgSolver::rkdgStepOne(double dt, int tnum, int double_pitch, int blo
 
 void CCUDARkdgSolver::rkdgStepTwo(double dt, int tnum, int double_pitch, int blocks)
 {
-
 	kernel_rkdgStepTwo<<<blocks, threads_per_block>>>(
 		tnum, double_pitch, dt, _cuarrays.mass_coeff,
 		_cuarrays.freedom_rho,  _cuarrays.freedom_rhou, 
@@ -853,7 +870,11 @@ void CCUDARkdgSolver::calculateResidual(int tnum)
 
 void CCUDARkdgSolver::outputSolution(double* result_rho, double* result_rhou, double* result_rhov, double* result_rhoE)
 {
+	/*for(int i = 0; i < 10; i++) {
+		cout<<"output rhou:"<<result_rhou[i]<<endl;
+	}*/
 	ofstream fout(solution_file.c_str());
+	cout<<"result file: "<<solution_file.c_str();
 	if ( !fout )
 	{
 		cout<<"Failed to open solution file: "<<solution_file<<" and output will be omitted."<<endl;
@@ -881,7 +902,6 @@ void CCUDARkdgSolver::outputSolution(double* result_rho, double* result_rhou, do
 			fout<<endl;
 		}
 	}
-
 	for ( i=0; i<vnum; ++i )
 	{
 		fout<<grid.vertice[i].getY()<<"  ";
@@ -891,7 +911,6 @@ void CCUDARkdgSolver::outputSolution(double* result_rho, double* result_rhou, do
 		}
 	}
 	fout<<endl;
-
 	for ( i=0; i<tnum; ++i )
 	{
 		fout<<result_rho[i]<<"  ";
@@ -901,7 +920,6 @@ void CCUDARkdgSolver::outputSolution(double* result_rho, double* result_rhou, do
 		}
 	}
 	fout<<endl;
-
 	for ( i=0; i<tnum; ++i )
 	{
 		fout<<result_rhou[i]/result_rho[i]<<"  ";
@@ -911,7 +929,6 @@ void CCUDARkdgSolver::outputSolution(double* result_rho, double* result_rhou, do
 		}
 	}
 	fout<<endl;
-
 	for ( i=0; i<tnum; ++i )
 	{
 		fout<<result_rhov[i]/result_rho[i]<<"  ";
@@ -921,7 +938,6 @@ void CCUDARkdgSolver::outputSolution(double* result_rho, double* result_rhou, do
 		}
 	}
 	fout<<endl;
-
 	for ( i=0; i<tnum; ++i )
 	{
 		rho = result_rho[i];
@@ -938,7 +954,6 @@ void CCUDARkdgSolver::outputSolution(double* result_rho, double* result_rhou, do
 		}
 	}
 	fout<<endl;
-
 	for ( i=0; i<tnum; ++i )
 	{
 		rho = result_rho[i];
@@ -948,6 +963,8 @@ void CCUDARkdgSolver::outputSolution(double* result_rho, double* result_rhou, do
 
 		p = (gamma-1)*(rhoE-0.5*rho*(u*u+v*v));
 		a = sqrt(gamma*p/rho);
+		if(i == 0) 
+			cout<<"rho:"<<rho<<",u"<<u<<",v"<<v<<",rhoE"<<rhoE<<",p"<<p<<",a"<<a<<endl;
 		ma = sqrt(u*u+v*v)/a;
 
 		fout<<ma<<"  ";
@@ -957,7 +974,6 @@ void CCUDARkdgSolver::outputSolution(double* result_rho, double* result_rhou, do
 		}
 	}
 	fout<<endl;
-
 	// 限制器标记
 	for ( i=0; i<tnum; ++i )
 	{

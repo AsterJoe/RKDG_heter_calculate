@@ -79,7 +79,6 @@ void CCUDAArrays::allocateMemory(int num)
 
 	size_t gsize = sizeof(double)*num;
 	
-
 	cudaMallocPitch((void**)&area,      &_double_pitch, gsize, 1);
 	cudaMallocPitch((void**)&perimeter, &_double_pitch, gsize, 1);
 
