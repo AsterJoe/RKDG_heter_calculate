@@ -190,41 +190,36 @@ void CCUDARkdgSolver::run(int myid, int nprocs)
 }
 
 void CCUDARkdgSolver::runNext() {
-	cout<<"runNext"<<endl;
 	grid.initializeGridNext();
-	grid.outputGrid();
-	grid.outputGridWithGhostCells("output/ghostmesh.plt");
+	//grid.outputGrid();
+	//grid.outputGridWithGhostCells("output/ghostmesh.plt");
 	
 	//fout<<mt.getCurrentTime()<<": complete grid initialization."<<endl;
 
 	// 测试三角形顶点是否逆时针排序
 //	grid.testTrianglesAntiwise();
 	grid.testLocalTriangleAntiwise();
-
 	// 初始化网格上基函数等信息
 //	grid.triangle_infos.allocateMemory(grid.getCellNumber());
 	grid.triangle_infos.allocateMemory(grid.getLocalCellNumber());
 	grid.initializeTriangleInfos();
-
 //	fout<<mt.getCurrentTime()<<": complete grid information initialization."<<endl;
 
 	// 标记网格单元
 //	grid.markBoundaryTriangles();
 	grid.markLocalBoundaryTriangles();
-	/*for (int i = 0; i < grid.getLocalCellNumber(); i++) {
-		cout<<"flag"<<grid.area_index<<":"<<grid.local_tri_flag[i]<<endl;
-	}*/
+	
 	// 分配GPU内存
 //	_cuarrays.allocateMemory(grid.getCellNumber());
 
 	_cuarrays.allocateMemory(grid.getLocalCellNumber());
-	cout<<"ab"<<endl;
+
 	// 将三角单元信息传送到GPU
 	copyTriangleInfosToGPU();
-	cout<<"cd"<<endl;
+
 	// 初始化RKDG自由度，并将初始化数据传到GPU
 	initRKDG();
-	cout<<"ef"<<endl;
+
 //	fout<<mt.getCurrentTime()<<": program initialization complete."<<endl;
 
 //	fout<<mt.getCurrentTime()<<": begin to solve flow."<<endl<<endl;
@@ -283,13 +278,6 @@ void CCUDARkdgSolver::copyTriangleInfosToGPU(void)
 
 //	cudaMemcpy2DAsync(_cuarrays.triangle_flag, int_pitch, grid.tri_flag, sizeof(int)*num, sizeof(int)*num, 1, cudaMemcpyHostToDevice);
 	cudaMemcpy2DAsync(_cuarrays.triangle_flag, int_pitch, grid.local_tri_flag, sizeof(int)*num, sizeof(int)*num, 1, cudaMemcpyHostToDevice);
-
-	if ( cudaPeekAtLastError() !=cudaSuccess )
-	{
-		cout<<"throw error previous!"<<endl;
-	} else {
-		cout<<"not throw error previous!"<<endl;
-	}
 
 	size_t gsize = sizeof(double)*num;
 
@@ -360,6 +348,7 @@ void CCUDARkdgSolver::initRKDG()
 	for ( int i=0; i<num; ++i )
 	{
 		_freedom_rho[i] = rhoref;
+		//_freedom_rho[i] = myid + 1;
 		_freedom_rhou[i] = rhoref *u;
 		_freedom_rhov[i] = rhoref*v;
 		_freedom_rhoE[i] = rhoref*(ut*ut)/2 + pref/(rhoref*(gamma-1));
@@ -868,11 +857,8 @@ void CCUDARkdgSolver::calculateResidual(int tnum)
 //	cudaMemcpy2DAsync(_cuarrays.freedom_rhoE, pitch, _freedom_rhoE, pitch, pitch, BASIS_FUNCTIONS, cudaMemcpyHostToDevice);
 //}
 
-void CCUDARkdgSolver::outputSolution(double* result_rho, double* result_rhou, double* result_rhov, double* result_rhoE)
+void CCUDARkdgSolver::outputSolution(int* data_size, double* result_rho, double* result_rhou, double* result_rhov, double* result_rhoE)
 {
-	/*for(int i = 0; i < 10; i++) {
-		cout<<"output rhou:"<<result_rhou[i]<<endl;
-	}*/
 	ofstream fout(solution_file.c_str());
 	cout<<"result file: "<<solution_file.c_str();
 	if ( !fout )
@@ -911,9 +897,20 @@ void CCUDARkdgSolver::outputSolution(double* result_rho, double* result_rhou, do
 		}
 	}
 	fout<<endl;
+	int *index;
+	index = (int*)malloc(nprocs * sizeof(int));
+	for (int i = 0; i < nprocs; i++) {
+		index[i] = 0;
+	}
+
 	for ( i=0; i<tnum; ++i )
 	{
-		fout<<result_rho[i]<<"  ";
+		int start_loc(0);
+		//fout<<result_rho[i]<<"  ";
+		for (int j = 0; j < grid.elem_location[i]; j++) {
+			start_loc += data_size[j];
+		}
+		fout<<result_rho[start_loc + index[grid.elem_location[i]]++]<<"  ";
 		if ( i%6==0 )
 		{
 			fout<<endl;
@@ -963,8 +960,6 @@ void CCUDARkdgSolver::outputSolution(double* result_rho, double* result_rhou, do
 
 		p = (gamma-1)*(rhoE-0.5*rho*(u*u+v*v));
 		a = sqrt(gamma*p/rho);
-		if(i == 0) 
-			cout<<"rho:"<<rho<<",u"<<u<<",v"<<v<<",rhoE"<<rhoE<<",p"<<p<<",a"<<a<<endl;
 		ma = sqrt(u*u+v*v)/a;
 
 		fout<<ma<<"  ";

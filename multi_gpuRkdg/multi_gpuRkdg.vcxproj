@@ -37,28 +37,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\..\zxy\rkdg-cuda\naca0012\Makefile" />
-    <None Include="..\..\Makefile" />
-    <None Include="..\..\mesh_script\mesh_script\node10000\Vertice.txt" />
     <None Include="C:\Program Files (x86)\MPICH2\bin\input\ElemDepart.dat" />
-    <None Include="C:\Program Files (x86)\MPICH2\bin\output\boundary.dat" />
-    <None Include="C:\Program Files (x86)\MPICH2\bin\output\ghostmesh.plt" />
-    <None Include="C:\Program Files (x86)\MPICH2\bin\output\index.dat" />
+    <None Include="C:\Program Files (x86)\MPICH2\bin\input\ElemEdge.dat" />
     <None Include="ClassDiagram1.cd" />
-    <None Include="I:\20170608\output-网格加密之后500步\obj_val.plt" />
-    <None Include="input\depart10.dat" />
-    <None Include="input\depart3.dat" />
-    <None Include="input\depart4.dat" />
-    <None Include="input\EdgeVertice.dat" />
-    <None Include="input\ElemDepart.dat" />
-    <None Include="input\ElemEdge.dat" />
-    <None Include="input\ElemNeigh.dat" />
-    <None Include="input\ElemVertice.dat" />
-    <None Include="input\main.conf" />
-    <None Include="input\mesh.conf" />
-    <None Include="input\Vertice.dat" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\rkdg\rkdg\src\unstructuredgrid.cpp" />
+    <ClCompile Include="rkdgad.cpp" />
     <ClCompile Include="src\config.cpp" />
     <ClCompile Include="src\cudaarrays.cpp" />
     <ClCompile Include="src\edge.cpp" />
@@ -72,6 +56,7 @@
     <ClCompile Include="src\unstructuredgrid.cpp" />
     <ClCompile Include="src\vertice2d.cpp" />
     <ClCompile Include="testLocalElemIndex.cpp" />
+    <ClCompile Include="unstruc.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\cudarkdgsolver.cu" />

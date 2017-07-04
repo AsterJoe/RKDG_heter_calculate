@@ -62,64 +62,16 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="input\EdgeVertice.dat">
-      <Filter>input</Filter>
-    </None>
-    <None Include="input\ElemDepart.dat">
-      <Filter>input</Filter>
-    </None>
-    <None Include="input\ElemEdge.dat">
-      <Filter>input</Filter>
-    </None>
-    <None Include="input\ElemNeigh.dat">
-      <Filter>input</Filter>
-    </None>
-    <None Include="input\ElemVertice.dat">
-      <Filter>input</Filter>
-    </None>
-    <None Include="input\main.conf">
-      <Filter>input</Filter>
-    </None>
-    <None Include="input\mesh.conf">
-      <Filter>input</Filter>
-    </None>
-    <None Include="input\Vertice.dat">
-      <Filter>input</Filter>
-    </None>
     <None Include="..\..\..\..\..\zxy\rkdg-cuda\naca0012\Makefile">
       <Filter>inc</Filter>
     </None>
-    <None Include="input\depart10.dat">
-      <Filter>input</Filter>
-    </None>
-    <None Include="input\depart4.dat">
-      <Filter>input</Filter>
-    </None>
-    <None Include="input\depart3.dat">
-      <Filter>input</Filter>
-    </None>
-    <None Include="..\..\mesh_script\mesh_script\node10000\Vertice.txt">
-      <Filter>input</Filter>
-    </None>
-    <None Include="..\..\Makefile">
-      <Filter>input</Filter>
-    </None>
-    <None Include="C:\Program Files (x86)\MPICH2\bin\output\ghostmesh.plt">
-      <Filter>input</Filter>
-    </None>
-    <None Include="C:\Program Files (x86)\MPICH2\bin\output\index.dat">
-      <Filter>input</Filter>
-    </None>
-    <None Include="C:\Program Files (x86)\MPICH2\bin\output\boundary.dat">
-      <Filter>input</Filter>
-    </None>
-    <None Include="I:\20170608\output-网格加密之后500步\obj_val.plt">
-      <Filter>inc</Filter>
-    </None>
+    <None Include="ClassDiagram1.cd" />
     <None Include="C:\Program Files (x86)\MPICH2\bin\input\ElemDepart.dat">
       <Filter>input</Filter>
     </None>
-    <None Include="ClassDiagram1.cd" />
+    <None Include="C:\Program Files (x86)\MPICH2\bin\input\ElemEdge.dat">
+      <Filter>input</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\config.cpp">
@@ -161,8 +113,11 @@
     <ClCompile Include="src\sendboundaryindex.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\rkdg\rkdg\src\unstructuredgrid.cpp">
-      <Filter>input</Filter>
+    <ClCompile Include="rkdgad.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="unstruc.cpp">
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

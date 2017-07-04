@@ -92,8 +92,6 @@ class CUnstructuredGrid {
 		 */
 		void parseGhostNum(const string& trineigh_filename);
 
-		void parseLocalGhostNum();
-
 		/** 初始化网格数据 */
 		void initializeGrid(int gpu_index, int nprocs);
 

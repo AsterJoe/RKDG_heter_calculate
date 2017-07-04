@@ -208,7 +208,7 @@ class CCUDARkdgSolver {
 		void copyFreedomToHost(void);
 
 		/** 输出解 */
-		void outputSolution(double* result_rho,double* result_rhou, double* result_rhov, double* result_rhoE);
+		void outputSolution(int* data_size, double* result_rho,double* result_rhou, double* result_rhov, double* result_rhoE);
 
 		/**
 		 * 输出程序配置信息
