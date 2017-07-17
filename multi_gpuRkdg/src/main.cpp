@@ -61,7 +61,9 @@ int main(int argc, char* argv[])
 		solver.runNext();
 		RkdgAdvance advance(&solver);
 		advance.advance();
+		cout<<myid<<"end advance"<<endl;
 		solver.runAfter();
+		cout<<myid<<"end run after"<<endl;
 	/*}
 	catch ( const exception& e )
 	{
@@ -90,7 +92,7 @@ int main(int argc, char* argv[])
 	MPI_Gatherv(solver._freedom_rhoE, solver.grid.getLocalTriangleNumber(), MPI_DOUBLE,
 		rhoE_result, solver.grid.getTriangleNumber(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
 */
-
+	cout<<"ggg"<<endl;
 
 	if (myid != 0) {
 		MPI_Send(solver._freedom_rho, solver.grid.getLocalTriangleNumber(), MPI_DOUBLE,
@@ -118,6 +120,7 @@ int main(int argc, char* argv[])
 			MPI_Recv(solver._freedom_rhoE + start_loc, data_size[n], MPI_DOUBLE, n, 10003, MPI_COMM_WORLD, &status);
 			start_loc += data_size[n];
 		}
+		cout<<"hhh"<<endl;
 		//int i =0;
 		//for (int t = 0; t < BASIS_FUNCTIONS; t++) {
 		//	for(i = 0; i < solver.grid.getLocalTriangleNumber(); i++) {
@@ -140,11 +143,11 @@ int main(int argc, char* argv[])
 		//		rhoE_result[t * num + j] = rhoE_buffer[t * data_size / BASIS_FUNCTIONS + j - solver.grid.getLocalTriangleNumber()];
 		//	}
 		//}
-		/*for(int i = 0; i < 10; i++) {
-		cout<<"rhou:"<<rhou_result[i]<<endl;
-		}*/
+		for(int i = 0; i < 10; i++) {
+			cout<<"rhou:"<<solver._freedom_rho[i]<<endl;
+		}
 		solver.outputSolution(data_size, solver._freedom_rho, solver._freedom_rhou, solver._freedom_rhov, solver._freedom_rhoE);
-		
+		cout<<"mmm"<<endl;
 	}
 	cout<<"complete solving flow, press ENTER to exit."<<endl;
 	end = clock();

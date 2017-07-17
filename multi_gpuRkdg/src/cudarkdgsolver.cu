@@ -859,27 +859,31 @@ void CCUDARkdgSolver::calculateResidual(int tnum)
 
 void CCUDARkdgSolver::outputSolution(int* data_size, double* result_rho, double* result_rhou, double* result_rhov, double* result_rhoE)
 {
+	cout<<"ofstream"<<endl;
 	ofstream fout(solution_file.c_str());
-	cout<<"result file: "<<solution_file.c_str();
+	cout<<"file :"<<solution_file.c_str()<<endl;
+	cout<<"result file: "<<solution_file.c_str()<<endl;
+	cout<<"start if"<<endl;
 	if ( !fout )
 	{
 		cout<<"Failed to open solution file: "<<solution_file<<" and output will be omitted."<<endl;
 		return;
 	}
-
+	cout<<"end if"<<endl;
 	int i;
 	int vnum, tnum;
 	double rho, u, v, rhoE, p, a, ma;
 	vnum = grid.getVerticeNumber();
 	tnum = grid.getTriangleNumber();
-
+	cout<<"-1"<<endl;
 	fout<<"TITLE=RKDG"<<endl;
+	cout<<"-2"<<endl;
 	fout<<"VARIABLES=X , Y , rho , u , v , p, Ma , FLAG"<<endl;
 	fout<<"ZONE T= T1 N= "<<vnum<<" , E= "<<tnum<<" , ZONETYPE=FETRIANGLE"<<endl;
 	fout<<"DATAPACKING=BLOCK"<<endl;
 	fout<<"VARLOCATION=([1-2]=NODAL,[3-8]=CELLCENTERED)"<<endl;
 	fout<<"DT=(SINGLE SINGLE SINGLE SINGLE SINGLE SINGLE SINGLE SINGLE)"<<endl;
-
+	cout<<"0"<<endl;
 	for ( i=0; i<vnum; ++i )
 	{
 		fout<<grid.vertice[i].getX()<<"  ";
@@ -888,6 +892,7 @@ void CCUDARkdgSolver::outputSolution(int* data_size, double* result_rho, double*
 			fout<<endl;
 		}
 	}
+	cout<<"1"<<endl;
 	for ( i=0; i<vnum; ++i )
 	{
 		fout<<grid.vertice[i].getY()<<"  ";
@@ -896,13 +901,14 @@ void CCUDARkdgSolver::outputSolution(int* data_size, double* result_rho, double*
 			fout<<endl;
 		}
 	}
+	cout<<"2"<<endl;
 	fout<<endl;
 	int *index;
 	index = (int*)malloc(nprocs * sizeof(int));
 	for (int i = 0; i < nprocs; i++) {
 		index[i] = 0;
 	}
-
+	cout<<"3"<<endl;
 	for ( i=0; i<tnum; ++i )
 	{
 		int start_loc(0);
@@ -916,6 +922,7 @@ void CCUDARkdgSolver::outputSolution(int* data_size, double* result_rho, double*
 			fout<<endl;
 		}
 	}
+	cout<<"4"<<endl;
 	fout<<endl;
 	for ( i=0; i<tnum; ++i )
 	{
@@ -925,6 +932,7 @@ void CCUDARkdgSolver::outputSolution(int* data_size, double* result_rho, double*
 			fout<<endl;
 		}
 	}
+	cout<<"5"<<endl;
 	fout<<endl;
 	for ( i=0; i<tnum; ++i )
 	{
@@ -934,6 +942,7 @@ void CCUDARkdgSolver::outputSolution(int* data_size, double* result_rho, double*
 			fout<<endl;
 		}
 	}
+	cout<<"6"<<endl;
 	fout<<endl;
 	for ( i=0; i<tnum; ++i )
 	{
@@ -950,6 +959,7 @@ void CCUDARkdgSolver::outputSolution(int* data_size, double* result_rho, double*
 			fout<<endl;
 		}
 	}
+	cout<<"7"<<endl;
 	fout<<endl;
 	for ( i=0; i<tnum; ++i )
 	{
@@ -968,6 +978,7 @@ void CCUDARkdgSolver::outputSolution(int* data_size, double* result_rho, double*
 			fout<<endl;
 		}
 	}
+	cout<<"8"<<endl;
 	fout<<endl;
 	// 限制器标记
 	for ( i=0; i<tnum; ++i )
@@ -984,6 +995,7 @@ void CCUDARkdgSolver::outputSolution(int* data_size, double* result_rho, double*
 	{
 		fout<<grid.tri_vertice[3*i]+1<<"    "<<grid.tri_vertice[3*i+1]+1<<"    "<<grid.tri_vertice[3*i+2]+1<<endl;
 	}
+	cout<<"before close"<<endl;
 	fout.close();
 }
 

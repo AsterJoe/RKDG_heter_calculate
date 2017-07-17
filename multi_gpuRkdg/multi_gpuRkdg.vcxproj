@@ -42,6 +42,7 @@
     <None Include="ClassDiagram1.cd" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="input\temp.cpp" />
     <ClCompile Include="rkdgad.cpp" />
     <ClCompile Include="src\config.cpp" />
     <ClCompile Include="src\cudaarrays.cpp" />
