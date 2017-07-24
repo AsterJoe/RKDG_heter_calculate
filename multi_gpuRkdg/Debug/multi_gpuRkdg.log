@@ -1,16 +1,16 @@
-﻿生成启动时间为 2017/7/14 星期五 下午 6:27:09。
+﻿生成启动时间为 2017/7/24 星期一 上午 10:18:46。
      1>项目“d:\documents\visual studio 2010\Projects\multi_gpuRkdg\multi_gpuRkdg\multi_gpuRkdg.vcxproj”在节点 2 上(rebuild 个目标)。
      1>_PrepareForClean:
          正在删除文件“Debug\multi_gpuRkdg.lastbuildstate”。
        CudaClean:
-         cmd.exe /C "C:\Users\Administrator\AppData\Local\Temp\tmp4a1be9690662497ea20cecba445a00c3.cmd"
+         cmd.exe /C "C:\Users\Administrator\AppData\Local\Temp\tmp092432a071634f81b42ed0f9c662a841.cmd"
          "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\bin\nvcc.exe" -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin"  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile   -g   -DWIN32 -D_DEBUG -D_CONSOLE -DMPICH_SKIP_MPICXX -D_MBCS -Xcompiler "/EHsc /W3 /nologo /Od /Zi /RTC1 /MTd " -o Debug\cudarkdgsolver.cu.obj "d:\documents\visual studio 2010\Projects\multi_gpuRkdg\multi_gpuRkdg\src\cudarkdgsolver.cu" -clean
          
          d:\documents\visual studio 2010\Projects\multi_gpuRkdg\multi_gpuRkdg>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\bin\nvcc.exe" -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin"  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile   -g   -DWIN32 -D_DEBUG -D_CONSOLE -DMPICH_SKIP_MPICXX -D_MBCS -Xcompiler "/EHsc /W3 /nologo /Od /Zi /RTC1 /MTd " -o Debug\cudarkdgsolver.cu.obj "d:\documents\visual studio 2010\Projects\multi_gpuRkdg\multi_gpuRkdg\src\cudarkdgsolver.cu" -clean 
          cudarkdgsolver.cu
          正在删除文件“Debug\src\cudarkdgsolver.cu.deps”。
        CudaClean:
-         cmd.exe /C "C:\Users\Administrator\AppData\Local\Temp\tmpc3299bcb7a4349ada0a134591343b8b8.cmd"
+         cmd.exe /C "C:\Users\Administrator\AppData\Local\Temp\tmpd5644860a51d4d4eb55be5dc6c4516b2.cmd"
          "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\bin\nvcc.exe" -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin"  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile   -g   -DWIN32 -D_DEBUG -D_CONSOLE -DMPICH_SKIP_MPICXX -D_MBCS -Xcompiler "/EHsc /W3 /nologo /Od /Zi /RTC1 /MTd " -o Debug\kernelfunctions.cu.obj "d:\documents\visual studio 2010\Projects\multi_gpuRkdg\multi_gpuRkdg\src\kernelfunctions.cu" -clean
          
          d:\documents\visual studio 2010\Projects\multi_gpuRkdg\multi_gpuRkdg>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\bin\nvcc.exe" -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin"  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile   -g   -DWIN32 -D_DEBUG -D_CONSOLE -DMPICH_SKIP_MPICXX -D_MBCS -Xcompiler "/EHsc /W3 /nologo /Od /Zi /RTC1 /MTd " -o Debug\kernelfunctions.cu.obj "d:\documents\visual studio 2010\Projects\multi_gpuRkdg\multi_gpuRkdg\src\kernelfunctions.cu" -clean 
@@ -24,7 +24,7 @@
          C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\cl.exe /E /nologo /showIncludes /TP /D__CUDACC__ /DWIN32 /D_DEBUG /D_CONSOLE /DMPICH_SKIP_MPICXX /D_MBCS /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include" /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\bin" /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include" /I. /FIcuda_runtime.h /c "d:\documents\visual studio 2010\Projects\multi_gpuRkdg\multi_gpuRkdg\src\kernelfunctions.cu" 
        CudaBuild:
          Compiling CUDA source file src\cudarkdgsolver.cu...
-         cmd.exe /C "C:\Users\Administrator\AppData\Local\Temp\tmp4bff3c63ec244942b06bf13b9dfcbc75.cmd"
+         cmd.exe /C "C:\Users\Administrator\AppData\Local\Temp\tmp994e0c88ea1d4e6b95659d74d26697c8.cmd"
          "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\bin\nvcc.exe" -gencode=arch=compute_20,code=\"sm_20,compute_20\" --use-local-env --cl-version 2010 -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin"  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile -cudart static  -g   -DWIN32 -D_DEBUG -D_CONSOLE -DMPICH_SKIP_MPICXX -D_MBCS -Xcompiler "/EHsc /W3 /nologo /Od /Zi /RTC1 /MTd " -o Debug\cudarkdgsolver.cu.obj "d:\documents\visual studio 2010\Projects\multi_gpuRkdg\multi_gpuRkdg\src\cudarkdgsolver.cu"
          
          d:\documents\visual studio 2010\Projects\multi_gpuRkdg\multi_gpuRkdg>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\bin\nvcc.exe" -gencode=arch=compute_20,code=\"sm_20,compute_20\" --use-local-env --cl-version 2010 -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin"  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile -cudart static  -g   -DWIN32 -D_DEBUG -D_CONSOLE -DMPICH_SKIP_MPICXX -D_MBCS -Xcompiler "/EHsc /W3 /nologo /Od /Zi /RTC1 /MTd " -o Debug\cudarkdgsolver.cu.obj "d:\documents\visual studio 2010\Projects\multi_gpuRkdg\multi_gpuRkdg\src\cudarkdgsolver.cu" 
@@ -132,7 +132,7 @@
          cudarkdgsolver.cu
        CudaBuild:
          Compiling CUDA source file src\kernelfunctions.cu...
-         cmd.exe /C "C:\Users\Administrator\AppData\Local\Temp\tmp9774d0b389df46e5afdf9c39cce2326a.cmd"
+         cmd.exe /C "C:\Users\Administrator\AppData\Local\Temp\tmp290ca30385284447a56857341574408f.cmd"
          "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\bin\nvcc.exe" -gencode=arch=compute_20,code=\"sm_20,compute_20\" --use-local-env --cl-version 2010 -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin"  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile -cudart static  -g   -DWIN32 -D_DEBUG -D_CONSOLE -DMPICH_SKIP_MPICXX -D_MBCS -Xcompiler "/EHsc /W3 /nologo /Od /Zi /RTC1 /MTd " -o Debug\kernelfunctions.cu.obj "d:\documents\visual studio 2010\Projects\multi_gpuRkdg\multi_gpuRkdg\src\kernelfunctions.cu"
          
          d:\documents\visual studio 2010\Projects\multi_gpuRkdg\multi_gpuRkdg>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\bin\nvcc.exe" -gencode=arch=compute_20,code=\"sm_20,compute_20\" --use-local-env --cl-version 2010 -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin"  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile -cudart static  -g   -DWIN32 -D_DEBUG -D_CONSOLE -DMPICH_SKIP_MPICXX -D_MBCS -Xcompiler "/EHsc /W3 /nologo /Od /Zi /RTC1 /MTd " -o Debug\kernelfunctions.cu.obj "d:\documents\visual studio 2010\Projects\multi_gpuRkdg\multi_gpuRkdg\src\kernelfunctions.cu" 
@@ -250,9 +250,10 @@
          sendboundaryindex.cpp
      1>d:\documents\visual studio 2010\projects\multi_gpurkdg\multi_gpurkdg\src\sendboundaryindex.cpp(13): warning C4018: “<”: 有符号/无符号不匹配
          rkdgadvance.cpp
-     1>d:\documents\visual studio 2010\projects\multi_gpurkdg\multi_gpurkdg\src\rkdgadvance.cpp(85): warning C4101: “request1”: 未引用的局部变量
-     1>d:\documents\visual studio 2010\projects\multi_gpurkdg\multi_gpurkdg\src\rkdgadvance.cpp(85): warning C4101: “request”: 未引用的局部变量
-     1>d:\documents\visual studio 2010\projects\multi_gpurkdg\multi_gpurkdg\src\rkdgadvance.cpp(356): warning C4018: “<”: 有符号/无符号不匹配
+     1>d:\documents\visual studio 2010\projects\multi_gpurkdg\multi_gpurkdg\src\rkdgadvance.cpp(110): warning C4101: “request1”: 未引用的局部变量
+     1>d:\documents\visual studio 2010\projects\multi_gpurkdg\multi_gpurkdg\src\rkdgadvance.cpp(110): warning C4101: “request”: 未引用的局部变量
+     1>d:\documents\visual studio 2010\projects\multi_gpurkdg\multi_gpurkdg\src\rkdgadvance.cpp(333): warning C4018: “<”: 有符号/无符号不匹配
+     1>d:\documents\visual studio 2010\projects\multi_gpurkdg\multi_gpurkdg\src\rkdgadvance.cpp(380): warning C4018: “<”: 有符号/无符号不匹配
          mytime.cpp
      1>d:\documents\visual studio 2010\projects\multi_gpurkdg\multi_gpurkdg\src\mytime.cpp(37): warning C4996: 'localtime': This function or variable may be unsafe. Consider using localtime_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  c:\program files (x86)\microsoft visual studio 10.0\vc\include\time.inl(112) : 参见“localtime”的声明
@@ -306,4 +307,4 @@
 
 生成成功。
 
-已用时间 00:00:17.42
+已用时间 00:00:28.19

@@ -922,6 +922,7 @@ void CCUDARkdgSolver::outputSolution(int* data_size, double* result_rho, double*
 			fout<<endl;
 		}
 	}
+	cout<<index[0]<<", "<<index[1]<<endl;
 	cout<<"4"<<endl;
 	fout<<endl;
 	for ( i=0; i<tnum; ++i )

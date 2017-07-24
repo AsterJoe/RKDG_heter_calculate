@@ -59,10 +59,33 @@ void RkdgAdvance::advance() {
 	convar_rhov_edge = (double*)malloc(num * TRIANGLE_EDGES * EDGE_GPOINTS * sizeof (double));
 	convar_rhoE_edge = (double*)malloc(num * TRIANGLE_EDGES * EDGE_GPOINTS * sizeof (double));
 
-	convar_rho_edge_buffer = (double*)malloc(depart_num * TRIANGLE_EDGES * EDGE_GPOINTS * sizeof (double));
+	/*convar_rho_edge_buffer = (double*)malloc(depart_num * TRIANGLE_EDGES * EDGE_GPOINTS * sizeof (double));
 	convar_rhou_edge_buffer = (double*)malloc(depart_num * TRIANGLE_EDGES * EDGE_GPOINTS * sizeof (double));
 	convar_rhov_edge_buffer = (double*)malloc(depart_num * TRIANGLE_EDGES * EDGE_GPOINTS * sizeof (double));
 	convar_rhoE_edge_buffer = (double*)malloc(depart_num * TRIANGLE_EDGES * EDGE_GPOINTS * sizeof (double));
+*/
+	int buffer_num(100);
+	rho_buffer = new double*[solver.nprocs - 1];
+	rhou_buffer = new double*[solver.nprocs - 1];
+	rhov_buffer = new double*[solver.nprocs - 1];
+	rhoE_buffer = new double*[solver.nprocs - 1];
+
+	convar_rho_edge_buffer = new double*[solver.nprocs - 1];
+	convar_rhou_edge_buffer = new double*[solver.nprocs - 1];
+	convar_rhov_edge_buffer = new double*[solver.nprocs - 1];
+	convar_rhoE_edge_buffer = new double*[solver.nprocs - 1];
+
+	for (int i = 0; i < solver.nprocs - 1; i++) {
+		rho_buffer[i] = (double*)malloc(buffer_num * BASIS_FUNCTIONS * sizeof(double));
+		rhou_buffer[i] = (double*)malloc(buffer_num * BASIS_FUNCTIONS * sizeof(double));
+		rhov_buffer[i] = (double*)malloc(buffer_num * BASIS_FUNCTIONS * sizeof(double));
+		rhoE_buffer[i] = (double*)malloc(buffer_num * BASIS_FUNCTIONS * sizeof(double));
+		
+		convar_rho_edge_buffer[i] = (double*)malloc(buffer_num * TRIANGLE_EDGES * EDGE_GPOINTS * sizeof(double));
+		convar_rhou_edge_buffer[i] = (double*)malloc(buffer_num * TRIANGLE_EDGES * EDGE_GPOINTS * sizeof(double));
+		convar_rhov_edge_buffer[i] = (double*)malloc(buffer_num * TRIANGLE_EDGES * EDGE_GPOINTS * sizeof(double));
+		convar_rhoE_edge_buffer[i] = (double*)malloc(buffer_num * TRIANGLE_EDGES * EDGE_GPOINTS * sizeof(double));
+	}
 
 	int x = 1;
 	do 
@@ -72,7 +95,9 @@ void RkdgAdvance::advance() {
 		cudaEventRecord(time_start);
 		// 计算当前时间步长
 		solver.getTimeStep(tnum);
-		
+		cout<<"7"<<endl;
+		//getDt();
+		cout<<"8"<<endl;
 		cudaEventRecord(time_stop);
 		
 		// 保存旧自由度
@@ -117,7 +142,7 @@ void RkdgAdvance::advance() {
 			}
 			solver.boundaryCondition(tnum + local_inner_count, num, pitch_num, solver.rhoref, rhou, rhov, rhoE);
 			if (isCommun) {
-				commuInfo(commu_count);		
+				commuInfo(commu_count);
 			}
 			// 计算体积分残差
 			solver.calculateVolumeRHS(tnum, pitch_num, blocks);
@@ -145,10 +170,10 @@ void RkdgAdvance::advance() {
 				if ( 0==(count-1)%solver.print_interval )
 					cout<<"Step: "<<count<<", time step: "<<solver._dt[0]<<endl;
 		
-				if ( (solver._terminal_time-nt)<solver._dt[0] )
+				/*if ( (solver._terminal_time-nt)<solver._dt[0] )
 				{
 					solver._dt[0] = solver._terminal_time -  nt;
-				}
+				}*/
 		
 				// 时间步推进
 				solver.rkdgStepOne(solver._dt[0], tnum, pitch_num, blocks);
@@ -168,7 +193,7 @@ void RkdgAdvance::advance() {
 				break;
 			}
 		}
-		
+		cout<<"dt:"<<solver._dt[0]<<endl;
 		if (isCommun && solver.myid != 0) {
 			MPI_Irecv(&x,1, MPI_INT, 0, solver.nprocs + 13 * commu_count++, MPI_COMM_WORLD, &request2);
 		}
@@ -237,108 +262,145 @@ void RkdgAdvance::advance() {
 		fout.close();
 }
 
+double RkdgAdvance::getDt() {
+	double tmx(0);
+	for (int i = 0; i < solver.grid.getLocalTriangleNumber(); i++) {
+		double rho = solver._freedom_rho[i];
+		double u   = solver._freedom_rhou[i] / rho;
+		double v   = solver._freedom_rhov[i] / rho;
+		double p   = (solver.gamma-1)*(solver._freedom_rhoE[i]-0.5*rho*(u*u+v*v));
+		double a   = sqrt(solver.gamma*p/rho);
+
+		double dx  = (sqrt(u*u+v*v)+a)*solver.grid.triangle_infos.perimeter[i]/solver.grid.triangle_infos.area[i];
+
+		if ( dx>tmx )
+		{
+			tmx = dx;
+		}
+	}
+	//solver._dt[0] = solver.cfl / tmx;
+	cout<<"tmx:"<<tmx<<endl;
+	cout<<"my dt:" << solver.cfl / tmx<<endl;
+	return solver.cfl / tmx;
+}
 
 void RkdgAdvance::commuInfo(int commu_count) {
-	int depart_num  = solver.grid.local_innerBoundary_index[0].size();
+	int buffer_num(100);
 	int num = solver.grid.getLocalCellNumber();
 	size_t pitch = solver._cuarrays.getDoublePitch();
 	size_t size = sizeof(double) * num;
-	cudaMemcpy2D(solver._freedom_rho,  size, solver._cuarrays.freedom_rho,  pitch, size, BASIS_FUNCTIONS, cudaMemcpyDeviceToHost);			  
-	cudaMemcpy2D(solver._freedom_rhou, size, solver._cuarrays.freedom_rhou, pitch, size, BASIS_FUNCTIONS, cudaMemcpyDeviceToHost);			  
-	cudaMemcpy2D(solver._freedom_rhov, size, solver._cuarrays.freedom_rhov, pitch, size, BASIS_FUNCTIONS, cudaMemcpyDeviceToHost);			 
-	cudaMemcpy2D(solver._freedom_rhoE, size, solver._cuarrays.freedom_rhoE, pitch, size, BASIS_FUNCTIONS, cudaMemcpyDeviceToHost);
-	isCommun = true;
-	MPI_Request request[4],req, request1;
-	MPI_Status status[4];		
-	for (int i = 0; i < solver.nprocs - 1; i++) {
-		int num = solver.grid.local_innerBoundary_index[i].size();
-		rho_buffer = (double*)malloc(num * BASIS_FUNCTIONS * sizeof(double));
-		rhou_buffer = (double*)malloc(num * BASIS_FUNCTIONS * sizeof(double));
-		rhov_buffer = (double*)malloc(num * BASIS_FUNCTIONS * sizeof(double));
-		rhoE_buffer = (double*)malloc(num * BASIS_FUNCTIONS * sizeof(double));
-		for (int t = 0; t < BASIS_FUNCTIONS; t++) {
-			for (int j = 0; j < num; j++) {
-				rho_buffer[t * num + j] = solver._freedom_rho[t * solver.grid.getLocalCellNumber() + solver.grid.local_innerBoundary_index[i].at(j)];
-				rhou_buffer[t * num + j] = solver._freedom_rhou[t * solver.grid.getLocalCellNumber() + solver.grid.local_innerBoundary_index[i].at(j)];
-				rhov_buffer[t * num + j] = solver._freedom_rhov[t * solver.grid.getLocalCellNumber() + solver.grid.local_innerBoundary_index[i].at(j)];
-				rhoE_buffer[t * num + j] = solver._freedom_rhoE[t * solver.grid.getLocalCellNumber() + solver.grid.local_innerBoundary_index[i].at(j)];
-			}
-		}
+	cudaMemcpy2DAsync(solver._freedom_rho,  size, solver._cuarrays.freedom_rho,  pitch, size, BASIS_FUNCTIONS, cudaMemcpyDeviceToHost);			  
+	cudaMemcpy2DAsync(solver._freedom_rhou, size, solver._cuarrays.freedom_rhou, pitch, size, BASIS_FUNCTIONS, cudaMemcpyDeviceToHost);			  
+	cudaMemcpy2DAsync(solver._freedom_rhov, size, solver._cuarrays.freedom_rhov, pitch, size, BASIS_FUNCTIONS, cudaMemcpyDeviceToHost);			 
+	cudaMemcpy2DAsync(solver._freedom_rhoE, size, solver._cuarrays.freedom_rhoE, pitch, size, BASIS_FUNCTIONS, cudaMemcpyDeviceToHost);
 	
-		int dest = i < solver.myid ? i : i + 1;
-		
-		MPI_Isend(rho_buffer, num * BASIS_FUNCTIONS, MPI_DOUBLE, dest, solver.nprocs + 1 + 13 * commu_count, MPI_COMM_WORLD, &req);
-		MPI_Isend(rhou_buffer, num * BASIS_FUNCTIONS, MPI_DOUBLE, dest, solver.nprocs + 2 + 13 * commu_count, MPI_COMM_WORLD, &req);
-		MPI_Isend(rhov_buffer, num * BASIS_FUNCTIONS, MPI_DOUBLE, dest, solver.nprocs + 3 + 13 * commu_count, MPI_COMM_WORLD, &req);
-		MPI_Isend(rhoE_buffer, num * BASIS_FUNCTIONS, MPI_DOUBLE, dest, solver.nprocs + 4 + 13 * commu_count, MPI_COMM_WORLD, &req);
-
-		MPI_Irecv(rho_buffer, num * BASIS_FUNCTIONS, MPI_DOUBLE, dest, solver.nprocs + 1 + 13 * commu_count, MPI_COMM_WORLD, &request[0]);
-		MPI_Irecv(rhou_buffer, num * BASIS_FUNCTIONS, MPI_DOUBLE, dest, solver.nprocs + 2 + 13 * commu_count, MPI_COMM_WORLD, &request[1]);
-		MPI_Irecv(rhov_buffer, num * BASIS_FUNCTIONS, MPI_DOUBLE, dest, solver.nprocs + 3 + 13 * commu_count, MPI_COMM_WORLD, &request[2]);
-		MPI_Irecv(rhoE_buffer, num * BASIS_FUNCTIONS, MPI_DOUBLE, dest, solver.nprocs + 4 + 13 * commu_count, MPI_COMM_WORLD, &request[3]);			
-		MPI_Waitall(4, request, status);
-		/*for(int i = 0; i < 10; i++) {
-			cout<<"receive rhou:"<<rhou_buffer[i]<<endl;
-		}*/
-		dealCommuData(i);
-	}
-	
-	
-	//.......................................................................
 	cudaMemcpy2DAsync(convar_rho_edge, size, solver._cuarrays.convar_rho_edge, pitch, size, TRIANGLE_EDGES * EDGE_GPOINTS, cudaMemcpyDeviceToHost);			  
 	cudaMemcpy2DAsync(convar_rhou_edge, size, solver._cuarrays.convar_rhou_edge, pitch, size, TRIANGLE_EDGES * EDGE_GPOINTS, cudaMemcpyDeviceToHost);			 
 	cudaMemcpy2DAsync(convar_rhov_edge, size, solver._cuarrays.convar_rhov_edge, pitch, size, TRIANGLE_EDGES * EDGE_GPOINTS, cudaMemcpyDeviceToHost);
 	cudaMemcpy2DAsync(convar_rhoE_edge, size, solver._cuarrays.convar_rhoE_edge, pitch, size, TRIANGLE_EDGES * EDGE_GPOINTS, cudaMemcpyDeviceToHost);
 	cudaDeviceSynchronize();
-	//cout<<"convar 2"<<endl;
-	for (int t = 0; t < depart_num; t++)
-	{
-		for (int p = 0; p < TRIANGLE_EDGES * EDGE_GPOINTS; p++) {
-			convar_rho_edge_buffer[t + p * depart_num] = convar_rho_edge[solver.grid.local_innerBoundary_index[0].at(t) + p * num];
-			convar_rhou_edge_buffer[t + p * depart_num] = convar_rhou_edge[solver.grid.local_innerBoundary_index[0].at(t) + p * num];
-			convar_rhov_edge_buffer[t + p * depart_num] = convar_rhov_edge[solver.grid.local_innerBoundary_index[0].at(t) + p * num];
-			convar_rhoE_edge_buffer[t + p * depart_num] = convar_rhoE_edge[solver.grid.local_innerBoundary_index[0].at(t) + p * num];
-				
+	
+	isCommun = true;
+	MPI_Request *request,req, request1;
+	MPI_Status status[4];	
+	request = new MPI_Request[8 * (solver.nprocs - 1)];
+	for (int i = 0; i < solver.nprocs - 1; i++) {
+		int num = solver.grid.local_innerBoundary_index[i].size();
+		for (int t = 0; t < BASIS_FUNCTIONS; t++) {
+			for (int j = 0; j < num; j++) {
+				rho_buffer[i][t * buffer_num + j] = solver._freedom_rho[t * solver.grid.getLocalCellNumber() + solver.grid.local_innerBoundary_index[i].at(j)];
+				rhou_buffer[i][t * buffer_num + j] = solver._freedom_rhou[t * solver.grid.getLocalCellNumber() + solver.grid.local_innerBoundary_index[i].at(j)];
+				rhov_buffer[i][t * buffer_num + j] = solver._freedom_rhov[t * solver.grid.getLocalCellNumber() + solver.grid.local_innerBoundary_index[i].at(j)];
+				rhoE_buffer[i][t * buffer_num + j] = solver._freedom_rhoE[t * solver.grid.getLocalCellNumber() + solver.grid.local_innerBoundary_index[i].at(j)];
+			}
 		}
-	}
-	//cout<<"convar 3"<<endl;
-	int dest = solver.myid == 0 ? 1 : 0;
+	
+		int dest = i < solver.myid ? i : i + 1;
+		
+		MPI_Isend(rho_buffer[i], buffer_num * BASIS_FUNCTIONS, MPI_DOUBLE, dest, solver.nprocs + 1 + 13 * commu_count, MPI_COMM_WORLD, &req);
+		MPI_Isend(rhou_buffer[i], buffer_num * BASIS_FUNCTIONS, MPI_DOUBLE, dest, solver.nprocs + 2 + 13 * commu_count, MPI_COMM_WORLD, &req);
+		MPI_Isend(rhov_buffer[i], buffer_num * BASIS_FUNCTIONS, MPI_DOUBLE, dest, solver.nprocs + 3 + 13 * commu_count, MPI_COMM_WORLD, &req);
+		MPI_Isend(rhoE_buffer[i], buffer_num * BASIS_FUNCTIONS, MPI_DOUBLE, dest, solver.nprocs + 4 + 13 * commu_count, MPI_COMM_WORLD, &req);
 
-	MPI_Isend(convar_rho_edge_buffer, depart_num * TRIANGLE_EDGES * EDGE_GPOINTS, MPI_DOUBLE, dest, solver.nprocs + 5 + 13 * commu_count, MPI_COMM_WORLD, &request1);
-	MPI_Irecv(convar_rho_edge_buffer, depart_num * TRIANGLE_EDGES * EDGE_GPOINTS, MPI_DOUBLE, dest, solver.nprocs + 5 + 13 * commu_count, MPI_COMM_WORLD, &request[0]);
-	MPI_Isend(convar_rhou_edge_buffer, depart_num * TRIANGLE_EDGES * EDGE_GPOINTS, MPI_DOUBLE, dest, solver.nprocs + 6 + 13 * commu_count, MPI_COMM_WORLD, &request1);
-	MPI_Irecv(convar_rhou_edge_buffer, depart_num * TRIANGLE_EDGES * EDGE_GPOINTS, MPI_DOUBLE, dest, solver.nprocs + 6 + 13 * commu_count, MPI_COMM_WORLD, &request[1]);
-	MPI_Isend(convar_rhov_edge_buffer, depart_num * TRIANGLE_EDGES * EDGE_GPOINTS, MPI_DOUBLE, dest, solver.nprocs + 7 + 13 * commu_count, MPI_COMM_WORLD, &request1);
-	MPI_Irecv(convar_rhov_edge_buffer, depart_num * TRIANGLE_EDGES * EDGE_GPOINTS, MPI_DOUBLE, dest, solver.nprocs + 7 + 13 * commu_count, MPI_COMM_WORLD, &request[2]);
-	MPI_Isend(convar_rhoE_edge_buffer, depart_num * TRIANGLE_EDGES * EDGE_GPOINTS, MPI_DOUBLE, dest, solver.nprocs + 8 + 13 * commu_count, MPI_COMM_WORLD, &request1);
-	MPI_Irecv(convar_rhoE_edge_buffer, depart_num * TRIANGLE_EDGES * EDGE_GPOINTS, MPI_DOUBLE, dest, solver.nprocs + 8 + 13 * commu_count, MPI_COMM_WORLD, &request[3]);
-	MPI_Waitall(4, request, status);
-	//cout<<"convar 4"<<endl;
-	dealCommuConvar();
+		MPI_Irecv(rho_buffer[i], buffer_num * BASIS_FUNCTIONS, MPI_DOUBLE, dest, solver.nprocs + 1 + 13 * commu_count, MPI_COMM_WORLD, &request[0]);
+		MPI_Irecv(rhou_buffer[i], buffer_num * BASIS_FUNCTIONS, MPI_DOUBLE, dest, solver.nprocs + 2 + 13 * commu_count, MPI_COMM_WORLD, &request[1]);
+		MPI_Irecv(rhov_buffer[i], buffer_num * BASIS_FUNCTIONS, MPI_DOUBLE, dest, solver.nprocs + 3 + 13 * commu_count, MPI_COMM_WORLD, &request[2]);
+		MPI_Irecv(rhoE_buffer[i], buffer_num * BASIS_FUNCTIONS, MPI_DOUBLE, dest, solver.nprocs + 4 + 13 * commu_count, MPI_COMM_WORLD, &request[3]);			
+		//MPI_Waitall(4, request, status);
+
+
+		//......................................................................................
+		for (int t = 0; t < solver.grid.local_innerBoundary_index[i].size(); t++)
+		{
+			for (int p = 0; p < TRIANGLE_EDGES * EDGE_GPOINTS; p++) {
+				convar_rho_edge_buffer[i][t + p * buffer_num] = convar_rho_edge[solver.grid.local_innerBoundary_index[i].at(t) + p * num];
+				convar_rhou_edge_buffer[i][t + p * buffer_num] = convar_rhou_edge[solver.grid.local_innerBoundary_index[i].at(t) + p * num];
+				convar_rhov_edge_buffer[i][t + p * buffer_num] = convar_rhov_edge[solver.grid.local_innerBoundary_index[i].at(t) + p * num];
+				convar_rhoE_edge_buffer[i][t + p * buffer_num] = convar_rhoE_edge[solver.grid.local_innerBoundary_index[i].at(t) + p * num];
+
+			}
+		}
+		MPI_Isend(convar_rho_edge_buffer[i], buffer_num * TRIANGLE_EDGES * EDGE_GPOINTS, MPI_DOUBLE, dest, solver.nprocs + 5 + 13 * commu_count, MPI_COMM_WORLD, &request1);
+		MPI_Irecv(convar_rho_edge_buffer[i], buffer_num * TRIANGLE_EDGES * EDGE_GPOINTS, MPI_DOUBLE, dest, solver.nprocs + 5 + 13 * commu_count, MPI_COMM_WORLD, &request[4]);
+		MPI_Isend(convar_rhou_edge_buffer[i], buffer_num * TRIANGLE_EDGES * EDGE_GPOINTS, MPI_DOUBLE, dest, solver.nprocs + 6 + 13 * commu_count, MPI_COMM_WORLD, &request1);
+		MPI_Irecv(convar_rhou_edge_buffer[i], buffer_num * TRIANGLE_EDGES * EDGE_GPOINTS, MPI_DOUBLE, dest, solver.nprocs + 6 + 13 * commu_count, MPI_COMM_WORLD, &request[5]);
+		MPI_Isend(convar_rhov_edge_buffer[i], buffer_num * TRIANGLE_EDGES * EDGE_GPOINTS, MPI_DOUBLE, dest, solver.nprocs + 7 + 13 * commu_count, MPI_COMM_WORLD, &request1);
+		MPI_Irecv(convar_rhov_edge_buffer[i], buffer_num * TRIANGLE_EDGES * EDGE_GPOINTS, MPI_DOUBLE, dest, solver.nprocs + 7 + 13 * commu_count, MPI_COMM_WORLD, &request[6]);
+		MPI_Isend(convar_rhoE_edge_buffer[i], buffer_num * TRIANGLE_EDGES * EDGE_GPOINTS, MPI_DOUBLE, dest, solver.nprocs + 8 + 13 * commu_count, MPI_COMM_WORLD, &request1);
+		MPI_Irecv(convar_rhoE_edge_buffer[i], buffer_num * TRIANGLE_EDGES * EDGE_GPOINTS, MPI_DOUBLE, dest, solver.nprocs + 8 + 13 * commu_count, MPI_COMM_WORLD, &request[7]);
+
+		MPI_Waitall(8, request, status);
+	}
+	//MPI_Waitall(8 * (solver.nprocs - 1), request, status);
+	dealCommuData();
 }
 
-void RkdgAdvance::dealCommuData(int i) {
+void RkdgAdvance::dealCommuData() {
+	int buffer_num(100);
 	size_t pitch = solver._cuarrays.getDoublePitch();
-	int cur_loc(solver.grid.getLocalTriangleNumber());
-//	for (int i = 0; i < solver.nprocs - 1; i++) {
+
+	int tvn = solver.grid.getLocalTriangleNumber();
+	int cell = solver.grid.getLocalCellNumber();
+	for (int i = 0; i < solver.nprocs - 1; i++) {
+		int cur_loc(solver.grid.getLocalTriangleNumber());
 		for (int t = 0; t < i; t++) {
 			cur_loc += solver.grid.local_innerBoundary_index[t].size();
 		}
-	int num = solver.grid.local_innerBoundary_index[i].size();
-	for (int t = 0; t < BASIS_FUNCTIONS; t++) {
-		for (int j = 0; j < num; j++) {
-			solver._freedom_rho[t * solver.grid.getLocalCellNumber() + cur_loc + j] =  rho_buffer[t * num + j];
-			solver._freedom_rhou[t * solver.grid.getLocalCellNumber() + cur_loc + j] = rhou_buffer[t * num + j];
-			solver._freedom_rhov[t * solver.grid.getLocalCellNumber() + cur_loc + j] = rhov_buffer[t * num + j];
-			solver._freedom_rhoE[t * solver.grid.getLocalCellNumber() + cur_loc + j] = rhoE_buffer[t * num + j];
+		int num = solver.grid.local_innerBoundary_index[i].size();
+		for (int t = 0; t < BASIS_FUNCTIONS; t++) {
+			for (int j = 0; j < num; j++) {
+				solver._freedom_rho[t * solver.grid.getLocalCellNumber() + cur_loc + j] =  rho_buffer[i][t * buffer_num + j];
+				solver._freedom_rhou[t * solver.grid.getLocalCellNumber() + cur_loc + j] = rhou_buffer[i][t * buffer_num + j];
+				solver._freedom_rhov[t * solver.grid.getLocalCellNumber() + cur_loc + j] = rhov_buffer[i][t * buffer_num + j];
+				solver._freedom_rhoE[t * solver.grid.getLocalCellNumber() + cur_loc + j] = rhoE_buffer[i][t * buffer_num + j];
+			}
+		}
+
+
+		for (int j = 0; j < solver.grid.local_innerBoundary_index[i].size(); j++) {
+			for (int t = 0; t < TRIANGLE_EDGES * EDGE_GPOINTS; t++) {
+				convar_rho_edge[tvn + t * cell] = 
+					convar_rho_edge_buffer[i][j + t * buffer_num];
+				convar_rhou_edge[tvn + t * cell] = 
+					convar_rhou_edge_buffer[i][j + t * buffer_num];
+				convar_rhov_edge[tvn + t * cell] = 
+					convar_rhov_edge_buffer[i][j + t * buffer_num];
+				convar_rhoE_edge[tvn + t * cell] = 
+					convar_rhoE_edge_buffer[i][j + t * buffer_num];
+			}
+			tvn++;
 		}
 	}
-//	}
 	size_t size = sizeof(double)*solver.grid.getLocalCellNumber();
 	cudaMemcpy2DAsync(solver._cuarrays.freedom_rho,  pitch, solver._freedom_rho,  size, size, BASIS_FUNCTIONS, cudaMemcpyHostToDevice);			  
 	cudaMemcpy2DAsync(solver._cuarrays.freedom_rhou, pitch, solver._freedom_rhou, size, size, BASIS_FUNCTIONS, cudaMemcpyHostToDevice);			  
 	cudaMemcpy2DAsync(solver._cuarrays.freedom_rhov, pitch, solver._freedom_rhov, size, size, BASIS_FUNCTIONS, cudaMemcpyHostToDevice);			 
 	cudaMemcpy2DAsync(solver._cuarrays.freedom_rhoE, pitch, solver._freedom_rhoE, size, size, BASIS_FUNCTIONS, cudaMemcpyHostToDevice);
+
+	cudaMemcpy2DAsync(solver._cuarrays.convar_rho_edge, pitch, convar_rho_edge, size, size, TRIANGLE_EDGES * EDGE_GPOINTS, cudaMemcpyHostToDevice);			  
+	cudaMemcpy2DAsync(solver._cuarrays.convar_rhou_edge, pitch, convar_rhou_edge, size, size, TRIANGLE_EDGES * EDGE_GPOINTS, cudaMemcpyHostToDevice);			 
+	cudaMemcpy2DAsync(solver._cuarrays.convar_rhov_edge, pitch, convar_rhov_edge, size, size, TRIANGLE_EDGES * EDGE_GPOINTS, cudaMemcpyHostToDevice);
+	cudaMemcpy2DAsync(solver._cuarrays.convar_rhoE_edge, pitch, convar_rhoE_edge, size, size, TRIANGLE_EDGES * EDGE_GPOINTS, cudaMemcpyHostToDevice);
 	cudaError_t error = cudaPeekAtLastError();
 	if ( error!=cudaSuccess ) {
 		throw CMyException(cudaGetErrorString(error));
@@ -346,28 +408,24 @@ void RkdgAdvance::dealCommuData(int i) {
 	cudaDeviceSynchronize();
 }
 
-void RkdgAdvance::dealCommuConvar() {
-	int tvn = solver.grid.getLocalTriangleNumber();
-	int cell = solver.grid.getLocalCellNumber();
-	for (int i = 0; i < solver.grid.local_innerBoundary_index[0].size(); i++) {
-		for (int t = 0; t < TRIANGLE_EDGES * EDGE_GPOINTS; t++) {
-			convar_rho_edge[tvn + t * cell] = 
-				convar_rho_edge_buffer[i + t * solver.grid.local_innerBoundary_index[0].size()];
-			convar_rhou_edge[tvn + t * cell] = 
-				convar_rhou_edge_buffer[i + t * solver.grid.local_innerBoundary_index[0].size()];
-			convar_rhov_edge[tvn + t * cell] = 
-				convar_rhov_edge_buffer[i + t * solver.grid.local_innerBoundary_index[0].size()];
-			convar_rhoE_edge[tvn + t * cell] = 
-				convar_rhoE_edge_buffer[i + t * solver.grid.local_innerBoundary_index[0].size()];
-		}
-		tvn++;
+RkdgAdvance::~RkdgAdvance() {
+	for (int i = 0; i <solver.nprocs - 1; i++) {
+		delete[] rho_buffer[i];
+		delete[] rhou_buffer[i];
+		delete[] rhov_buffer[i];
+		delete[] rhoE_buffer[i];
+		delete[] convar_rho_edge_buffer[i];
+		delete[] convar_rhou_edge_buffer[i];
+		delete[] convar_rhov_edge_buffer[i];
+		delete[] convar_rhoE_edge_buffer[i];
 	}
-	
-	size_t size = sizeof(double) * solver.grid.getLocalCellNumber();
-	size_t pitch = solver._cuarrays.getDoublePitch();
-	cudaMemcpy2DAsync(solver._cuarrays.convar_rho_edge, pitch, convar_rho_edge, size, size, TRIANGLE_EDGES * EDGE_GPOINTS, cudaMemcpyHostToDevice);			  
-	cudaMemcpy2DAsync(solver._cuarrays.convar_rhou_edge, pitch, convar_rhou_edge, size, size, TRIANGLE_EDGES * EDGE_GPOINTS, cudaMemcpyHostToDevice);			 
-	cudaMemcpy2DAsync(solver._cuarrays.convar_rhov_edge, pitch, convar_rhov_edge, size, size, TRIANGLE_EDGES * EDGE_GPOINTS, cudaMemcpyHostToDevice);
-	cudaMemcpy2DAsync(solver._cuarrays.convar_rhoE_edge, pitch, convar_rhoE_edge, size, size, TRIANGLE_EDGES * EDGE_GPOINTS, cudaMemcpyHostToDevice);
-	cudaDeviceSynchronize();
+	delete[] rho_buffer;
+	delete[] rhou_buffer;
+	delete[] rhov_buffer;
+	delete[] rhoE_buffer;
+
+	delete[] convar_rho_edge;
+	delete[] convar_rhou_edge;
+	delete[] convar_rhov_edge;
+	delete[] convar_rhoE_edge;
 }
